@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0f7fc;
+  --color-brand-100: #e0eff7;
+  --color-brand-200: #b8daf0;
+  --color-brand-300: #7bbce3;
+  --color-brand-400: #3499d1;
+  --color-brand: #005B94;
+  --color-brand-600: #005b94;
+  --color-brand-700: #004978;
+  --color-brand-800: #003e65;
+  --color-brand-900: #063454;
+  --color-brand-950: #042137;
+
+  --color-healthy: #10B981;
+  --color-healthy-light: #E6F4EA;
+  --color-healthy-dark: #065F46;
+
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
+  --color-warning-dark: #92400E;
+
+  --color-critical: #EF4444;
+  --color-critical-light: #FEE2E2;
+  --color-critical-dark: #991B1B;
+
+  --color-canvas: #F8FAFC;
+  --color-surface: #FFFFFF;
+
+  --font-sans: 'Inter', 'system-ui', 'sans-serif';
+  --font-display: 'Outfit', 'system-ui', 'sans-serif';
+  --font-mono: 'JetBrains Mono', 'monospace';
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-slate-900 font-sans antialiased selection:bg-brand-100 selection:text-brand-900;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-slate-900 tracking-tight;
+  }
+}
+
+/* Custom premium design system scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
+
+/* Smooth custom graph grids and transitions */
+.react-flow__background {
+  @apply opacity-40;
+}
+
+.react-flow__node {
+  @apply transition-all duration-300;
+}
+
+.react-flow__edge-path {
+  @apply transition-all duration-300;
+}
+
+/* Animate radar rings */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+}
+
+/* Tabular numbers formatting for numbers, percentages and counts */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
