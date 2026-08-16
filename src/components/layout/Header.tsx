@@ -15,8 +15,7 @@ export const Header: React.FC = () => {
     selectedVehicleId,
     setSelectedEntityId,
     setSelectedErrorId,
-    setSelectedVehicleId,
-    setCopilotOpen
+    setSelectedVehicleId
   } = useGlobalStore();
 
   const [searchFocused, setSearchFocused] = useState(false);
@@ -143,15 +142,6 @@ export const Header: React.FC = () => {
             );
           })}
         </div>
-
-        {/* Global Copilot shortcut */}
-        <button
-          onClick={() => setCopilotOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 border border-brand-200/60 hover:bg-brand-100 text-brand text-xs font-semibold rounded-lg shadow-sm transition-all"
-        >
-          <Command className="w-3.5 h-3.5" />
-          <span>Copilot</span>
-        </button>
 
         {/* Muted search widget */}
         <div className="relative w-48 md:w-60">

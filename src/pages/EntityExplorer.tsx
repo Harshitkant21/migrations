@@ -11,7 +11,7 @@ export const EntityExplorer: React.FC = () => {
   const { environment, activePage, setActivePage, selectedEntityId, setSelectedEntityId, setSelectedErrorId } = useGlobalStore();
 
   const [entities, setEntities] = useState<EntityMetadata[]>([]);
-  const [activeTab, setActiveTab] = useState<'metadata' | 'schema' | 'mapping' | 'dependencies' | 'errors' | 'changes'>('metadata');
+  const [activeTab, setActiveTab] = useState<'metadata' | 'schema' | 'datagrid' | 'mapping' | 'dependencies' | 'errors' | 'changes'>('metadata');
   
   // Active schema and dependencies states
   const [schema, setSchema] = useState<TableSchema | null>(null);
@@ -76,6 +76,7 @@ export const EntityExplorer: React.FC = () => {
   const tabs = [
     { id: 'metadata', name: 'Overview', icon: Database },
     { id: 'schema', name: 'Columns & Types', icon: Columns },
+    { id: 'datagrid', name: 'Data Grid Explorer', icon: Database },
     { id: 'mapping', name: 'Source Mapping', icon: ArrowLeftRight },
     { id: 'dependencies', name: 'Lineage & Keys', icon: GitBranch },
     { id: 'errors', name: `DQ Errors (${errors.length})`, icon: AlertOctagon },
@@ -276,34 +277,126 @@ export const EntityExplorer: React.FC = () => {
                 } />
               )}
 
-              {/* Tab 3: SOURCE TARGET MAPPING */}
+              {/* Tab 3: VISUAL COLUMN MAPPING STUDIO CANVAS */}
               {activeTab === 'mapping' && (
-                <Card title="Transformation Logic" subtitle="Mapping rules applied during ETL translation">
+                <Card title="Visual Column Mapping Studio Canvas" subtitle="Field-to-field ETL transformation node visualizer">
                   <div className="space-y-4">
                     {schema?.mappingRules.map((map, idx) => (
-                      <div key={idx} className="p-4 border border-slate-100 bg-slate-50/50 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">SOURCE COLUMN</span>
+                      <div key={idx} className="p-4 border border-slate-200/80 bg-surface rounded-xl shadow-premium space-y-3">
+                        
+                        {/* Mapping Connector Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                          {/* Source Field Card */}
+                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                            <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block font-sans">SOURCE COLUMN (LHS)</span>
                             <span className="text-xs font-mono font-bold text-slate-800 block">{map.sourceTable}.{map.sourceColumn}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">VARCHAR(50) • Legacy Oracle</span>
                           </div>
-                          <ArrowRight className="w-4 h-4 text-slate-400 mt-3" />
-                          <div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">TARGET COLUMN</span>
-                            <span className="text-xs font-mono font-bold text-brand block">{activeEntity.name}.{map.targetColumn}</span>
+
+                          {/* Transformation Rule Card Node */}
+                          <div className="p-3 bg-brand-50/50 border border-brand-200/60 rounded-lg text-center space-y-1">
+                            <span className="text-[9px] font-extrabold text-brand uppercase tracking-widest block font-sans">ETL TRANSFORMATION NODE</span>
+                            <span className="text-xs font-semibold text-brand-900 block">{map.transformationRule}</span>
+                            <span className="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-sans">100% Rule Confidence</span>
+                          </div>
+
+                          {/* Target Field Card */}
+                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1 text-right">
+                            <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block font-sans">TARGET COLUMN (RHS)</span>
+                            <span className="text-xs font-mono font-bold text-brand block">{activeEntity?.name || 'Table'}.{map.targetColumn}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">VARCHAR(50) • Snowflake PROD</span>
                           </div>
                         </div>
-                        <div className="text-right max-w-sm md:text-right text-left">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">RULE</span>
-                          <span className="text-xs text-slate-600 font-medium leading-tight block mt-0.5">{map.transformationRule}</span>
+
+                        {/* Live Sample Preview Box */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-600 bg-slate-50/50 p-2.5 rounded-lg">
+                          <span className="text-slate-400 font-sans text-[10px] font-bold uppercase">Sample Before / After Preview:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-700 bg-surface border border-slate-200 px-2 py-0.5 rounded">PUNE-X7-2026</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-brand" />
+                            <span className="text-brand font-bold bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">X7-2026</span>
+                          </div>
                         </div>
+
                       </div>
                     ))}
                   </div>
                 </Card>
               )}
 
-              {/* Tab 4: DEPENDENCY LINEAGE */}
+              {/* Tab 2.5: DATA GRID EXPLORER */}
+              {activeTab === 'datagrid' && (
+                <Card title={`${schema?.entityId.toUpperCase().replace('_', ' ') || 'TABLE'} Record Grid & Column Pinning`} subtitle="Interactive row-level LHS vs RHS staging comparison">
+                  <div className="space-y-4">
+                    
+                    {/* Controls Bar */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200/80 text-xs font-semibold text-slate-700">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SHOWING STAGING DATA:</span>
+                        <span className="font-mono text-brand font-bold">{entities.find(e => e.id === selectedEntityId)?.sourceCount.toLocaleString() || '42,500'} records</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold font-mono text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">✓ Column Pinning Active</span>
+                        <span className="text-[10px] font-bold font-mono text-brand bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">LHS vs RHS Diff On</span>
+                      </div>
+                    </div>
+
+                    {/* Interactive Table Grid */}
+                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table className="min-w-full divide-y divide-slate-200 text-left">
+                        <thead className="bg-slate-100 text-[10px] font-extrabold uppercase text-slate-500 tracking-wider font-mono">
+                          <tr>
+                            <th className="px-4 py-3 sticky left-0 bg-slate-100 border-r border-slate-200 shadow-sm z-10">
+                              {schema?.columns[0]?.name || 'id'} 📌 (Pinned PK)
+                            </th>
+                            <th className="px-4 py-3">Legacy Source Value (LHS)</th>
+                            <th className="px-4 py-3">Staging Target Value (RHS)</th>
+                            <th className="px-4 py-3">Reconciliation Status</th>
+                            <th className="px-4 py-3 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs font-mono text-slate-700 bg-surface">
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-4 py-2.5 font-bold text-slate-900 sticky left-0 bg-surface border-r border-slate-200">GMV-2967</td>
+                            <td className="px-4 py-2.5 text-slate-500 font-semibold">PUNE-X7-2026</td>
+                            <td className="px-4 py-2.5 text-red-600 font-bold">X7-2026 (Mismatch)</td>
+                            <td className="px-4 py-2.5"><span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded font-sans text-[10px] font-bold">DISCREPANCY</span></td>
+                            <td className="px-4 py-2.5 text-center font-sans">
+                              <button onClick={() => { setSelectedErrorId('ERR-2967'); setActivePage('errors'); }} className="text-brand hover:underline font-bold">Inspect Fix</button>
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-4 py-2.5 font-bold text-slate-900 sticky left-0 bg-surface border-r border-slate-200">GMV-1713</td>
+                            <td className="px-4 py-2.5 text-slate-500 font-semibold">VHC-1713-US-EAST</td>
+                            <td className="px-4 py-2.5 text-amber-600 font-bold">GMV-1713 (Duplicate)</td>
+                            <td className="px-4 py-2.5"><span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-sans text-[10px] font-bold">DUPLICATE</span></td>
+                            <td className="px-4 py-2.5 text-center font-sans">
+                              <button onClick={() => { setSelectedErrorId('ERR-1713'); setActivePage('errors'); }} className="text-brand hover:underline font-bold">Inspect Fix</button>
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-4 py-2.5 font-bold text-slate-900 sticky left-0 bg-surface border-r border-slate-200">GMV-1750</td>
+                            <td className="px-4 py-2.5 text-slate-500 font-semibold">VHC-1750-EXCLUDED</td>
+                            <td className="px-4 py-2.5 text-slate-400">GMV-1750 (Orphan)</td>
+                            <td className="px-4 py-2.5"><span className="bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-sans text-[10px] font-bold">ORPHAN</span></td>
+                            <td className="px-4 py-2.5 text-center font-sans">
+                              <button onClick={() => { setSelectedErrorId('ERR-1750'); setActivePage('errors'); }} className="text-brand hover:underline font-bold">Inspect Fix</button>
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-4 py-2.5 font-bold text-slate-900 sticky left-0 bg-surface border-r border-slate-200">GMV-2001</td>
+                            <td className="px-4 py-2.5 text-slate-500 font-semibold">GMV-2001-EU</td>
+                            <td className="px-4 py-2.5 text-emerald-600 font-bold">GMV-2001-EU</td>
+                            <td className="px-4 py-2.5"><span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-sans text-[10px] font-bold">RECONCILED</span></td>
+                            <td className="px-4 py-2.5 text-center font-sans text-slate-400">✓ Synced</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                  </div>
+                </Card>
+              )}
               {activeTab === 'dependencies' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Upstream parent references */}

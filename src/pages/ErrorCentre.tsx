@@ -49,7 +49,9 @@ export const ErrorCentre: React.FC = () => {
   const [sourceCompareData, setSourceCompareData] = useState<{ column: string; sourceValue: string; targetValue: string; status: string }[]>([]);
   const [loadingSource, setLoadingSource] = useState(false);
   const [overrideValue, setOverrideValue] = useState('');
+  const [updateMethod, setUpdateMethod] = useState<'DIRECT_OVERRIDE' | 'PATTERN_TRANSFORM' | 'LEGACY_IMPORT' | 'SQL_EXPRESSION'>('DIRECT_OVERRIDE');
   const [saveStatus, setSaveStatus] = useState('');
+  const [showTechDetails, setShowTechDetails] = useState(false);
 
   const loadErrors = async () => {
     setLoading(true);
@@ -460,124 +462,192 @@ export const ErrorCentre: React.FC = () => {
       <Drawer
         isOpen={drawerOpen}
         onClose={handleCloseDrawer}
-        title={selectedError ? `Error Diagnostic Report: ${selectedError.id}` : ''}
+        title={
+          activeJob 
+            ? `Pipeline Run: ${activeJob.id}` 
+            : selectedError 
+              ? `Error Diagnostic Report: ${selectedError.id}` 
+              : 'Validation Workbench'
+        }
         subtitle="Validation audit and remediation workbench"
         widthClass="max-w-xl"
       >
-        {selectedError && (
+        {activeJob ? (
           <div className="space-y-6">
-            
-            {/* Conditional view: Display Pipeline status logs if running, otherwise show standard info */}
-            {activeJob ? (
-              <div className="space-y-5 bg-slate-900 text-slate-300 p-5 rounded-lg border border-slate-800 shadow-inner font-mono">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pipeline validation log</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded
-                    ${activeJob.status === 'PROD_SUCCESS' ? 'bg-emerald-950 text-emerald-400' :
-                      activeJob.status === 'STG_SUCCESS' ? 'bg-blue-950 text-blue-400' :
-                      activeJob.status === 'STG_FAILED' ? 'bg-red-950 text-red-400' :
-                      'bg-slate-800 text-slate-400'}`}>
-                    {activeJob.status}
-                  </span>
-                </div>
+            {/* Conditional view: Display Pipeline status logs if running */}
+            <div className="space-y-5 bg-slate-900 text-slate-300 p-5 rounded-lg border border-slate-800 shadow-inner font-mono">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pipeline validation log</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded
+                  ${activeJob.status === 'PROD_SUCCESS' ? 'bg-emerald-950 text-emerald-400' :
+                    activeJob.status === 'STG_SUCCESS' ? 'bg-blue-950 text-blue-400' :
+                    activeJob.status === 'STG_FAILED' ? 'bg-red-950 text-red-400' :
+                    'bg-slate-800 text-slate-400'}`}>
+                  {activeJob.status}
+                </span>
+              </div>
 
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center gap-1.5 text-brand-400">
-                    <Terminal className="w-3.5 h-3.5" />
-                    <span>$ cat /remediation/pipeline/{activeJob.id}.log</span>
-                  </div>
-                  {/* Validation steps log output */}
-                  <div className="space-y-1 max-h-48 overflow-y-auto bg-black/40 p-2.5 border border-slate-950 rounded text-slate-400 text-[11px] leading-tight">
-                    {activeJob.stgValidationResult?.logs.map((log, idx) => (
-                      <p key={idx}>{log}</p>
-                    ))}
-                    {activeJob.prodExecutionResult?.logs.map((log, idx) => (
-                      <p key={idx} className="text-emerald-400">{log}</p>
-                    ))}
-                    {jobRunning && (
-                      <p className="animate-pulse text-blue-400">Executing transaction validation script...</p>
-                    )}
-                  </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-1.5 text-brand-400">
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span>$ cat /remediation/pipeline/{activeJob.id}.log</span>
                 </div>
-
-                {/* Promotional Timeline details */}
-                <div className="space-y-3 pt-3 border-t border-slate-800 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Pipeline ID:</span>
-                    <span className="text-slate-300 font-bold">{activeJob.id}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Staging verification:</span>
-                    <span className={activeJob.stgValidationResult?.success ? 'text-emerald-400 font-bold' : 'text-red-400'}>
-                      {activeJob.stgValidationResult?.success ? 'PASSED' : 'FAILED'}
-                    </span>
-                  </div>
-                  {activeJob.prodExecutionResult && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Production promotion:</span>
-                      <span className="text-emerald-400 font-bold">COMMITTED</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Pipeline promotion actions */}
-                <div className="pt-2 space-y-2">
-                  {activeJob.status === 'STG_SUCCESS' && (
-                    <>
-                      <button
-                        onClick={() => triggerProdPromotion('BATCH')}
-                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <span>Batch Push to PROD (Recommended)</span>
-                      </button>
-                      <button
-                        onClick={() => triggerProdPromotion('SINGLE')}
-                        className="w-full py-2.5 bg-slate-700 hover:bg-slate-800 text-slate-100 text-xs font-semibold rounded shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <span>Single Push to PROD (Isolate Commit)</span>
-                      </button>
-                    </>
-                  )}
-                  {activeJob.status === 'STG_FAILED' && (
-                    <div className="text-center p-3 bg-red-950/40 border border-red-900/60 rounded text-xs text-red-400 font-bold">
-                      PROD Promotion BLOCKED. Please fix constraints.
-                    </div>
-                  )}
-                  {activeJob.status === 'PROD_SUCCESS' && (
-                    <div className="text-center p-3 bg-emerald-950/40 border border-emerald-900/60 rounded text-xs text-emerald-400 font-bold flex items-center justify-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4" /> Remediation Completed & Audited.
-                    </div>
+                {/* Validation steps log output */}
+                <div className="space-y-1 max-h-48 overflow-y-auto bg-black/40 p-2.5 border border-slate-950 rounded text-slate-400 text-[11px] leading-tight">
+                  {activeJob.stgValidationResult?.logs.map((log, idx) => (
+                    <p key={idx}>{log}</p>
+                  ))}
+                  {activeJob.prodExecutionResult?.logs.map((log, idx) => (
+                    <p key={idx} className="text-emerald-400">{log}</p>
+                  ))}
+                  {jobRunning && (
+                    <p className="animate-pulse text-blue-400">Executing transaction validation script...</p>
                   )}
                 </div>
               </div>
-            ) : (
-              <>
-                {/* Standard Anomaly Details */}
-                <div className="space-y-4">
+
+              {/* Promotional Timeline details */}
+              <div className="space-y-3 pt-3 border-t border-slate-800 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Pipeline ID:</span>
+                  <span className="text-slate-300 font-bold">{activeJob.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Staging verification:</span>
+                  <span className={activeJob.stgValidationResult?.success ? 'text-emerald-400 font-bold' : 'text-red-400'}>
+                    {activeJob.stgValidationResult?.success ? 'PASSED' : 'FAILED'}
+                  </span>
+                </div>
+                {activeJob.prodExecutionResult && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Production promotion:</span>
+                    <span className="text-emerald-400 font-bold">COMMITTED</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Pipeline promotion actions */}
+              <div className="pt-2 space-y-2">
+                {activeJob.status === 'STG_SUCCESS' && (
+                  <>
+                    <button
+                      onClick={() => triggerProdPromotion('BATCH')}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span>Batch Push to PROD (Recommended)</span>
+                    </button>
+                    <button
+                      onClick={() => triggerProdPromotion('SINGLE')}
+                      className="w-full py-2.5 bg-slate-700 hover:bg-slate-800 text-slate-100 text-xs font-semibold rounded shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <span>Single Push to PROD (Isolate Commit)</span>
+                    </button>
+                  </>
+                )}
+                {activeJob.status === 'STG_FAILED' && (
+                  <div className="text-center p-3 bg-red-950/40 border border-red-900/60 rounded text-xs text-red-400 font-bold">
+                    PROD Promotion BLOCKED. Please fix constraints.
+                  </div>
+                )}
+                {activeJob.status === 'PROD_SUCCESS' && (
+                  <div className="text-center p-3 bg-emerald-950/40 border border-emerald-900/60 rounded text-xs text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4" /> Remediation Completed & Audited.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : selectedError ? (
+          <div className="space-y-6">
+            
+            {/* Level 3 Plain-English Diagnosis Sequence */}
+            <div className="space-y-4">
+              
+              {/* Header Title */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">ISSUE DIAGNOSIS</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${selectedError.severity === 'High' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
+                    {selectedError.severity} Severity
+                  </span>
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-800 font-display mt-0.5">
+                  {selectedError.entityId.toUpperCase().replace('_', ' ')} Validation Failure
+                </h3>
+              </div>
+
+              {/* What Happened */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">WHAT HAPPENED?</span>
+                <p className="text-xs font-semibold text-slate-800 leading-relaxed">
+                  {selectedError.affectedRecords.toLocaleString()} records failed staging database validation checks.
+                </p>
+              </div>
+
+              {/* Why Did It Happen */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">WHY DID IT HAPPEN?</span>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                  {selectedError.rootCause}
+                </p>
+              </div>
+
+              {/* Example Value Mismatch Box */}
+              <div className="p-3.5 bg-brand-50/50 border border-brand-200/60 rounded-xl space-y-2 font-mono text-xs">
+                <span className="text-[9px] font-extrabold text-brand uppercase tracking-widest block font-sans">EXAMPLE VALUE MISMATCH</span>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">AFFECTED SCHEMA</span>
-                    <span className="text-sm font-bold text-slate-800 font-display mt-0.5 block">
-                      {selectedError.entityId.toUpperCase().replace('_', ' ')}
+                    <span className="text-slate-400 text-[9px] uppercase tracking-wider block font-sans">Legacy Source Value</span>
+                    <span className="font-bold text-slate-800">
+                      {selectedError.id === 'ERR-2967' ? 'PUNE-X7-2026' : selectedError.evidence?.rootRecord || 'VHC-2967-US-EAST'}
                     </span>
                   </div>
-
                   <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">REMEDIATION CATEGORY</span>
-                    <span className="text-xs font-semibold text-slate-700 mt-0.5 block">
-                      {selectedError.category} ({selectedError.remediationCategory})
+                    <span className="text-slate-400 text-[9px] uppercase tracking-wider block font-sans">Target Required Format</span>
+                    <span className="font-bold text-brand">
+                      {selectedError.id === 'ERR-2967' ? 'X7-2026' : selectedError.evidence?.expectedReference || 'GMV-2967'}
                     </span>
                   </div>
+                </div>
+              </div>
 
-                  <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">ROOT CAUSE</span>
-                    <p className="text-xs text-slate-600 leading-relaxed mt-1 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                      {selectedError.rootCause}
-                    </p>
-                  </div>
+              {/* Impact Summary */}
+              <div className="flex items-center justify-between p-3 bg-slate-100/70 border border-slate-200/60 rounded-lg text-xs font-semibold text-slate-700">
+                <span>Impacted Row Count:</span>
+                <span className="font-mono font-extrabold text-slate-900">{selectedError.affectedRecords.toLocaleString()} records</span>
+              </div>
 
+              {/* Recommended Fix */}
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200/60 rounded-xl space-y-2">
+                <span className="text-[9px] font-extrabold text-emerald-700 uppercase tracking-widest block">RECOMMENDED FIX</span>
+                <p className="text-xs text-emerald-900 font-medium leading-relaxed">
+                  {selectedError.id === 'ERR-2967' && 'Remove the legacy plant prefix ("PUNE-") and normalize the engine ID reference key.'}
+                  {selectedError.id === 'ERR-1713' && 'Deduplicate configuration regional key entries before target table insertion.'}
+                  {selectedError.id === 'ERR-1750' && 'Safe to delete orphan reference row. 0 child dependents exist.'}
+                  {selectedError.id === 'ERR-3091' && 'Action blocked. Re-assign foreign key references prior to record deletion.'}
+                  {!['ERR-2967', 'ERR-1713', 'ERR-1750', 'ERR-3091'].includes(selectedError.id) && 'Apply transformation rule to align source values with target schema constraints.'}
+                </p>
+              </div>
+
+              {/* Expandable Technical Accordion Button */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTechDetails(!showTechDetails)}
+                  className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 transition-all flex items-center justify-between cursor-pointer"
+                >
+                  <span>{showTechDetails ? '▼ Hide Technical Details' : '▶ Show Technical Details (SQL, Datatypes & Dependency Tree)'}</span>
+                </button>
+              </div>
+
+              {/* Technical Details (Hidden behind Accordion) */}
+              {showTechDetails && (
+                <div className="space-y-4 pt-2 border-t border-slate-200/60 animate-fadeIn">
+                  
+                  {/* Diagnostic Evidence Details */}
                   {selectedError.evidence && (
                     <div>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">DIAGNOSTIC EVIDENCE</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">DIAGNOSTIC EVIDENCE DETAILS</span>
                       <div className="text-xs text-slate-600 leading-relaxed mt-1 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2 font-medium">
                         <p>{selectedError.evidence.explanation}</p>
                         <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/60 text-[11px] font-mono">
@@ -595,7 +665,7 @@ export const ErrorCentre: React.FC = () => {
                   )}
 
                   {/* Downstream Reference Tree */}
-                  <div className="border-t border-slate-100 pt-4">
+                  <div>
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">DOWNSTREAM DEPENDENCY IMPACT</span>
                     <div className="mt-1.5 p-3 bg-slate-50 border border-slate-100 rounded-lg text-xs leading-relaxed text-slate-600 font-medium">
                       This record is referenced by the following dependent hierarchies:
@@ -632,7 +702,7 @@ export const ErrorCentre: React.FC = () => {
                   </div>
 
                   {/* Legacy Source DB Reference Query */}
-                  <div className="border-t border-slate-100 pt-4">
+                  <div>
                     <div className="flex justify-between items-center">
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">LEGACY SOURCE DB REFERENCE</span>
                       <button
@@ -680,92 +750,155 @@ export const ErrorCentre: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Value Override Editor Form */}
-                  {selectedError.remediationCategory === 'FIXABLE' && (
-                    <div className="border-t border-slate-100 pt-4 space-y-2">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">REMEDIATION VALUE OVERRIDE EDITOR</span>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="Type value to override mismatch..."
-                          value={overrideValue}
-                          onChange={(e) => setOverrideValue(e.target.value)}
-                          className="flex-1 bg-slate-50 border border-slate-200 rounded py-1.5 px-3 text-xs outline-none hover:border-slate-300 focus:border-brand focus:bg-surface font-mono font-bold"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveOverride}
-                          className="bg-brand text-white hover:bg-brand-700 px-4 py-1.5 rounded text-xs font-bold active:scale-95 transition-all cursor-pointer"
-                        >
-                          Save Value
-                        </button>
-                      </div>
-                      {saveStatus && (
-                        <p className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded p-1.5 leading-tight">
-                          ✓ {saveStatus}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
                 </div>
+              )}
 
-                {/* Impact details & Action Button */}
-                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  {selectedError.category === 'Missing Vehicle' && (
+              {/* Value Override Editor Form */}
+              {selectedError.remediationCategory === 'FIXABLE' && (
+                <div className="border-t border-slate-100 pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">REMEDIATION VALUE UPDATE ENGINE</span>
+                    <span className="text-[9px] font-semibold text-brand bg-brand-50 border border-brand-200/60 px-1.5 py-0.5 rounded">
+                      Method: {updateMethod}
+                    </span>
+                  </div>
+
+                  {/* 4 Update Method Tabs */}
+                  <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-lg text-[10px] font-semibold text-slate-600">
                     <button
-                      onClick={() => {
-                        setSelectedVehicleId(selectedError.vehicleId || null);
-                        setSelectedErrorId(selectedError.id);
-                        setActivePage('cascade');
-                        setDrawerOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all"
+                      type="button"
+                      onClick={() => setUpdateMethod('DIRECT_OVERRIDE')}
+                      className={`py-1 rounded text-center transition-all ${updateMethod === 'DIRECT_OVERRIDE' ? 'bg-surface text-brand font-bold shadow-sm' : 'hover:text-slate-800'}`}
                     >
-                      <span className="flex items-center gap-1.5"><ExternalLink className="w-3.5 h-3.5 text-slate-400" /> Analyze Downstream Cascade</span>
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                      Direct
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpdateMethod('PATTERN_TRANSFORM');
+                        setOverrideValue('REPLACE(vehicle_code, "VHC-", "GMV-")');
+                      }}
+                      className={`py-1 rounded text-center transition-all ${updateMethod === 'PATTERN_TRANSFORM' ? 'bg-surface text-brand font-bold shadow-sm' : 'hover:text-slate-800'}`}
+                    >
+                      Pattern
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpdateMethod('LEGACY_IMPORT');
+                        setOverrideValue(selectedError.evidence?.expectedReference || 'GMV-2967');
+                      }}
+                      className={`py-1 rounded text-center transition-all ${updateMethod === 'LEGACY_IMPORT' ? 'bg-surface text-brand font-bold shadow-sm' : 'hover:text-slate-800'}`}
+                    >
+                      Import
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpdateMethod('SQL_EXPRESSION');
+                        setOverrideValue('COALESCE(target_ref, legacy_src_ref)');
+                      }}
+                      className={`py-1 rounded text-center transition-all ${updateMethod === 'SQL_EXPRESSION' ? 'bg-surface text-brand font-bold shadow-sm' : 'hover:text-slate-800'}`}
+                    >
+                      SQL Expr
+                    </button>
+                  </div>
+
+                  {/* Input and Action */}
+                  <div className="space-y-1.5">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Type value or expression to update reference..."
+                        value={overrideValue}
+                        onChange={(e) => setOverrideValue(e.target.value)}
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded py-1.5 px-3 text-xs outline-none hover:border-slate-300 focus:border-brand focus:bg-surface font-mono font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveOverride}
+                        className="bg-brand text-white hover:bg-brand-700 px-4 py-1.5 rounded text-xs font-bold active:scale-95 transition-all cursor-pointer shadow-sm"
+                      >
+                        Apply Fix
+                      </button>
+                    </div>
+                    
+                    {updateMethod === 'PATTERN_TRANSFORM' && (
+                      <p className="text-[9px] text-slate-400 font-mono">Rule preview: Target column will be transformed using pattern replace.</p>
+                    )}
+                    {updateMethod === 'SQL_EXPRESSION' && (
+                      <p className="text-[9px] text-slate-400 font-mono">Expression preview: Evaluated during STG dry-run pre-flight check.</p>
+                    )}
+                  </div>
+
+                  {saveStatus && (
+                    <p className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded p-1.5 leading-tight">
+                      ✓ {saveStatus}
+                    </p>
+                  )}
+                </div>
+              )}
+
+            </div>
+
+            {/* Impact details & Action Button */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              {selectedError.category === 'Missing Vehicle' && (
+                <button
+                  onClick={() => {
+                    setSelectedVehicleId(selectedError.vehicleId || null);
+                    setSelectedErrorId(selectedError.id);
+                    setActivePage('cascade');
+                    setDrawerOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all"
+                >
+                  <span className="flex items-center gap-1.5"><ExternalLink className="w-3.5 h-3.5 text-slate-400" /> Analyze Downstream Cascade</span>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+
+              {/* Remediation triggers based on safety eligibility */}
+              {selectedError.status !== 'Resolved' && (
+                <div className="pt-2">
+                  {selectedError.remediationCategory === 'FIXABLE' && (
+                    <button
+                      onClick={() => triggerPreview([selectedError.id], 'FIX')}
+                      className="w-full py-2.5 bg-brand hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
+                    >
+                      Preview and Run Fix
+                    </button>
+                  )}
+                  
+                  {selectedError.remediationCategory === 'DELETE_CANDIDATE' && (
+                    <button
+                      onClick={() => triggerPreview([selectedError.id], 'DELETE')}
+                      className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
+                    >
+                      Preview and Safe Delete
                     </button>
                   )}
 
-                  {/* Remediation triggers based on safety eligibility */}
-                  {selectedError.status !== 'Resolved' && (
-                    <div className="pt-2">
-                      {selectedError.remediationCategory === 'FIXABLE' && (
-                        <button
-                          onClick={() => triggerPreview([selectedError.id], 'FIX')}
-                          className="w-full py-2.5 bg-brand hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
-                        >
-                          Preview and Run Fix
-                        </button>
-                      )}
-                      
-                      {selectedError.remediationCategory === 'DELETE_CANDIDATE' && (
-                        <button
-                          onClick={() => triggerPreview([selectedError.id], 'DELETE')}
-                          className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all"
-                        >
-                          Preview and Safe Delete
-                        </button>
-                      )}
-
-                      {selectedError.remediationCategory === 'BLOCKED' && (
-                        <div className="p-3 bg-red-50 border border-red-200/60 text-red-800 text-xs font-bold text-center rounded-lg">
-                          ⚠ DELETION BLOCKED. Referential constraints require investigation.
-                        </div>
-                      )}
-
-                      {selectedError.remediationCategory === 'INVESTIGATE' && (
-                        <div className="p-3 bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold text-center rounded-lg">
-                          Requires technical character encoding investigation.
-                        </div>
-                      )}
+                  {selectedError.remediationCategory === 'BLOCKED' && (
+                    <div className="p-3 bg-red-50 border border-red-200/60 text-red-800 text-xs font-bold text-center rounded-lg">
+                      ⚠ DELETION BLOCKED. Referential constraints require investigation.
                     </div>
                   )}
 
+                  {selectedError.remediationCategory === 'INVESTIGATE' && (
+                    <div className="p-3 bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold text-center rounded-lg">
+                      Requires technical character encoding investigation.
+                    </div>
+                  )}
                 </div>
-              </>
-            )}
+              )}
 
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-brand-200 border-t-brand animate-spin" />
+            <span className="text-xs font-semibold">Loading diagnostic report details...</span>
           </div>
         )}
       </Drawer>

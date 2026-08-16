@@ -106,19 +106,6 @@ export interface CascadeNode {
   relationshipType?: string; // e.g., "1-to-Many Cascade", "Orphaned Association"
 }
 
-export interface CopilotMessage {
-  id: string;
-  sender: 'user' | 'assistant';
-  text: string;
-  timestamp: string;
-  structuredResponse?: {
-    rootCause: string;
-    evidence: string;
-    impact: string;
-    recommendation: string;
-  };
-}
-
 export interface ImpactPreviewResult {
   errorIds: string[];
   action: 'FIX' | 'DELETE' | 'RESTORE' | 'RELINK' | 'UPDATE';

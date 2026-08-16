@@ -2,7 +2,6 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { CopilotPanel } from './CopilotPanel';
 import { useGlobalStore } from '../../state/useGlobalStore';
 
 interface AppShellProps {
@@ -29,9 +28,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </div>
         </main>
       </div>
-
-      {/* AI Governance Copilot Panel */}
-      <CopilotPanel />
     </div>
   );
 };

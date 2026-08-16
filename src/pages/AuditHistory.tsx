@@ -29,10 +29,110 @@ export const AuditHistory: React.FC = () => {
     setDrawerOpen(true);
   };
 
+  // Replay Player State
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState<1 | 2 | 5>(1);
+  const [currentStep, setCurrentStep] = useState(0);
+  const totalSteps = 4;
+
+  useEffect(() => {
+    let timer: any;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= totalSteps - 1) {
+            setIsPlaying(false);
+            return totalSteps - 1;
+          }
+          return prev + 1;
+        });
+      }, 2000 / replaySpeed);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying, replaySpeed]);
+
+  const replaySteps = [
+    { title: 'Ingestion & STG Validation', desc: 'Ingested 42,500 legacy rows from Pune Oracle source DB into STG sandbox.', timestamp: '14:20:00 UTC' },
+    { title: 'Data Quality Anomaly Detection', desc: 'Detected ERR-2967 missing parent reference; blocked 150,610 terminal procedure rows.', timestamp: '14:21:15 UTC' },
+    { title: 'Remediation Pre-Flight Dry Run', desc: 'Applied DIRECT_OVERRIDE GMV-2967. STG dry-run validated 0 constraint violations.', timestamp: '14:22:30 UTC' },
+    { title: 'Production Promotion Commit', desc: 'Promoted batch push to Snowflake PROD. Operation OP-001 committed by A. Howard.', timestamp: '14:23:45 UTC' }
+  ];
+
   return (
     <div className="space-y-6">
       
-      {/* Metrics Banner */}
+      {/* Interactive Migration Replay Control Bar Card */}
+      <Card title="Interactive Migration Execution Replay" subtitle="Play back historical migration execution steps with timeline controls">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentStep >= totalSteps - 1) setCurrentStep(0);
+                  setIsPlaying(!isPlaying);
+                }}
+                className="px-4 py-2 bg-brand hover:bg-brand-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
+              >
+                <span>{isPlaying ? '⏸ Pause Replay' : '▶ Play Replay'}</span>
+              </button>
+
+              <div className="flex items-center gap-1 bg-surface border border-slate-200 rounded-lg p-1 text-[10px] font-bold text-slate-600 font-mono">
+                <span className="text-slate-400 px-1">Speed:</span>
+                {([1, 2, 5] as const).map(speed => (
+                  <button
+                    key={speed}
+                    type="button"
+                    onClick={() => setReplaySpeed(speed)}
+                    className={`px-2 py-0.5 rounded transition-all ${replaySpeed === speed ? 'bg-brand text-white font-bold' : 'hover:text-slate-900'}`}
+                  >
+                    {speed}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+              <button
+                type="button"
+                disabled={currentStep === 0}
+                onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                className="px-2.5 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40 hover:bg-slate-100 transition-all font-mono"
+              >
+                ◀ Prev
+              </button>
+              <span className="font-mono text-brand font-bold">Step {currentStep + 1} of {totalSteps}</span>
+              <button
+                type="button"
+                disabled={currentStep === totalSteps - 1}
+                onClick={() => setCurrentStep(prev => Math.min(totalSteps - 1, prev + 1))}
+                className="px-2.5 py-1 bg-surface border border-slate-200 rounded disabled:opacity-40 hover:bg-slate-100 transition-all font-mono"
+              >
+                Next ▶
+              </button>
+            </div>
+          </div>
+
+          {/* Timeline Progress Scrubber */}
+          <div className="space-y-1.5 px-1">
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+              <div 
+                className="bg-brand h-full transition-all duration-300 rounded-full" 
+                style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }} 
+              />
+            </div>
+            <div className="p-3.5 bg-surface border border-slate-200/80 rounded-xl space-y-1">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-800 font-display">
+                <span>{replaySteps[currentStep].title}</span>
+                <span className="font-mono text-[10px] text-slate-400 font-normal">{replaySteps[currentStep].timestamp}</span>
+              </div>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                {replaySteps[currentStep].desc}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Card title="Total Administrative Actions" subtitle="Immutable database mutations logged">
           <div className="flex items-center justify-between">

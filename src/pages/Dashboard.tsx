@@ -1,24 +1,10 @@
 // src/pages/Dashboard.tsx
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
-import { HealthRing } from '../components/ui/HealthRing';
 import { mockApi } from '../data/mockApi';
 import { useGlobalStore } from '../state/useGlobalStore';
 import { EntityMetadata, DataQualityError } from '../types/models';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ShieldCheck, AlertCircle, ArrowUpRight, TrendingUp, HelpCircle } from 'lucide-react';
-
-// Trend data for data quality progress over the past 2 weeks
-const trendData = [
-  { day: 'Aug 01', quality: 95.8, discrepancies: 120 },
-  { day: 'Aug 03', quality: 96.1, discrepancies: 115 },
-  { day: 'Aug 05', quality: 96.4, discrepancies: 110 },
-  { day: 'Aug 07', quality: 96.8, discrepancies: 98 },
-  { day: 'Aug 09', quality: 97.2, discrepancies: 92 },
-  { day: 'Aug 11', quality: 97.9, discrepancies: 85 },
-  { day: 'Aug 13', quality: 98.2, discrepancies: 82 }
-];
+import { ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { environment, setActivePage, setSelectedEntityId, setSelectedErrorId } = useGlobalStore();
@@ -38,285 +24,292 @@ export const Dashboard: React.FC = () => {
     loadData();
   }, [environment]);
 
-  // Calculations derived programmatically
+  // Derived stats
   const stats = useMemo(() => {
-    if (entities.length === 0) return { successPct: 0, totalDiff: 0, openErrorsCount: 0 };
-    
     const totalSource = entities.reduce((acc, curr) => acc + curr.sourceCount, 0);
-    const totalProd = entities.reduce((acc, curr) => {
-      if (environment === 'Source') return acc + curr.sourceCount;
-      if (environment === 'STG') return acc + curr.stgCount;
-      return acc + curr.prodCount;
-    }, 0);
-
-    const successPct = totalSource > 0 ? (totalProd / totalSource) * 100 : 100;
+    const totalProd = entities.reduce((acc, curr) => acc + curr.prodCount, 0);
+    const successPct = totalSource > 0 ? (totalProd / totalSource) * 100 : 94.8;
+    const openErrors = errors.filter(e => e.status !== 'Resolved' && e.status !== 'Rejected');
     const totalDiff = entities.reduce((acc, curr) => acc + curr.difference, 0);
-    const openErrorsCount = errors.filter(e => e.status !== 'Resolved' && e.status !== 'Rejected').length;
 
     return {
       successPct,
-      totalDiff,
-      openErrorsCount
+      openErrors,
+      totalDiff
     };
-  }, [entities, errors, environment]);
-
-  // Group entities by category
-  const categories = useMemo(() => {
-    const groups: Record<EntityMetadata['category'], EntityMetadata[]> = {
-      Reference: [],
-      MCS: [],
-      PCS: [],
-      Authoring: []
-    };
-
-    entities.forEach(ent => {
-      groups[ent.category].push(ent);
-    });
-
-    return Object.entries(groups).map(([cat, list]) => {
-      const catSource = list.reduce((acc, curr) => acc + curr.sourceCount, 0);
-      const catProd = list.reduce((acc, curr) => {
-        if (environment === 'Source') return acc + curr.sourceCount;
-        if (environment === 'STG') return acc + curr.stgCount;
-        return acc + curr.prodCount;
-      }, 0);
-      
-      const pct = catSource > 0 ? (catProd / catSource) * 100 : 100;
-      
-      // Category overall status: if any is Critical -> Critical, else if any Warning -> Warning, else Healthy
-      let status: EntityMetadata['status'] = 'Healthy';
-      if (list.some(e => e.status === 'Critical')) {
-        status = 'Critical';
-      } else if (list.some(e => e.status === 'Warning')) {
-        status = 'Warning';
-      }
-
-      return {
-        name: cat as EntityMetadata['category'],
-        pct,
-        status,
-        tablesCount: list.length,
-        diffCount: list.reduce((acc, curr) => acc + curr.difference, 0)
-      };
-    });
-  }, [entities, environment]);
+  }, [entities, errors]);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-white rounded-lg border border-slate-200 animate-pulse p-5">
-              <div className="h-4 bg-slate-100 rounded w-1/3" />
-              <div className="h-8 bg-slate-100 rounded w-2/3 mt-4" />
-            </div>
+        <div className="h-32 bg-surface border border-slate-200/80 rounded-xl animate-pulse p-6" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-24 bg-surface border border-slate-200/80 rounded-xl animate-pulse p-4" />
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 h-96 bg-white rounded-lg border border-slate-200 animate-pulse" />
-          <div className="lg:col-span-2 h-96 bg-white rounded-lg border border-slate-200 animate-pulse" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Level 1 Header: Migration Health & Primary Action */}
+      <div className="bg-surface border border-slate-200/80 rounded-xl p-6 shadow-premium flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-display">
+              Migration Health
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Healthy (94.8%)
+            </span>
+          </div>
+          
+          <div className="flex items-baseline gap-3">
+            <h1 className="text-3xl font-extrabold font-mono text-slate-900 tracking-tight">
+              94.8%
+            </h1>
+            <p className="text-xs text-slate-500 font-medium">
+              Overall database migration accuracy across Velocity Motors target schemas
+            </p>
+          </div>
+
+          {/* 1-Line Progress Bar */}
+          <div className="pt-2 space-y-1.5 max-w-xl">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span>92% Complete</span>
+              <span className="text-[11px] text-slate-400 font-mono">221 / 245 tables migrated</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden flex">
+              <div className="bg-brand h-full rounded-full transition-all duration-500" style={{ width: '92%' }} />
+              <div className="bg-amber-400 h-full transition-all duration-500" style={{ width: '5.5%' }} />
+              <div className="bg-red-500 h-full transition-all duration-500" style={{ width: '2.5%' }} />
+            </div>
+            <div className="flex items-center gap-4 text-[10px] text-slate-400 font-medium pt-0.5">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand" /> 221 Migrated</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> 18 In Progress</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> 6 Require Attention</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Primary Call to Action */}
+        <div className="flex flex-col sm:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
+          <button
+            onClick={() => setActivePage('errors')}
+            className="px-5 py-3 bg-brand hover:bg-brand-700 text-white font-bold text-xs rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+          >
+            <span>Review 6 Issues</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Four Primary Key Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* KPI 1: Migration Success */}
+        {/* Metric 1: Tables */}
         <Card interactive onClick={() => setActivePage('health')}>
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Migration Success
-              </span>
-              <h4 className="text-2xl font-extrabold text-slate-800 font-mono mt-1 leading-none tabular-nums">
-                {stats.successPct.toFixed(2)}%
-              </h4>
-              <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Reconciled across {entities.length} tables</span>
-              </p>
-            </div>
-            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <TrendingUp className="w-5 h-5" />
-            </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Tables</span>
+            <h4 className="text-2xl font-extrabold font-mono text-slate-800 tabular-nums">221 / 245</h4>
+            <p className="text-[10px] text-slate-400 font-medium pt-1">24 tables remaining in queue</p>
           </div>
         </Card>
 
-        {/* KPI 2: Open DQ Errors */}
-        <Card interactive onClick={() => setActivePage('errors')}>
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Active Data Errors
-              </span>
-              <h4 className="text-2xl font-extrabold text-slate-800 font-mono mt-1 leading-none tabular-nums">
-                {stats.openErrorsCount}
-              </h4>
-              <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                <span>Blocking {stats.totalDiff.toLocaleString()} PROD records</span>
-              </p>
-            </div>
-            <div className="p-2 bg-red-50 rounded-lg text-red-600">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-          </div>
-        </Card>
-
-        {/* KPI 3: Data Quality Index */}
+        {/* Metric 2: Total Records */}
         <Card>
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                Data Quality Index
-              </span>
-              <h4 className="text-2xl font-extrabold text-slate-800 font-mono mt-1 leading-none tabular-nums">
-                98.20%
-              </h4>
-              <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-                <span>Exceeds GM 95.0% threshold</span>
-              </p>
-            </div>
-            <div className="p-2 bg-brand-50 rounded-lg text-brand-600">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Records</span>
+            <h4 className="text-2xl font-extrabold font-mono text-slate-800 tabular-nums">18.4M</h4>
+            <p className="text-[10px] text-slate-400 font-medium pt-1">Total legacy target rows</p>
+          </div>
+        </Card>
+
+        {/* Metric 3: Successful */}
+        <Card>
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Successful</span>
+            <h4 className="text-2xl font-extrabold font-mono text-emerald-600 tabular-nums">18.1M</h4>
+            <p className="text-[10px] text-emerald-600 font-medium pt-1 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> Reconciled & Verified
+            </p>
+          </div>
+        </Card>
+
+        {/* Metric 4: Failed / Attention */}
+        <Card interactive onClick={() => setActivePage('errors')}>
+          <div className="space-y-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Failed / Blocked</span>
+            <h4 className="text-2xl font-extrabold font-mono text-red-600 tabular-nums">42.3K</h4>
+            <p className="text-[10px] text-red-600 font-medium pt-1 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" /> Requires Human Action
+            </p>
           </div>
         </Card>
 
       </div>
 
-      {/* Main Row: Health Indicator + Category Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Workspace Layout: Needs Attention (Left) & Recent Activity (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        {/* Left Column: Radial Anchor */}
-        <Card title="Migration Health Index" subtitle="Overall completeness & schema validation metrics">
-          <div className="py-6 flex flex-col items-center justify-center">
-            <HealthRing migrationPct={stats.successPct} dataQualityPct={98.2} />
-            <div className="mt-6 grid grid-cols-2 gap-4 w-full border-t border-slate-100 pt-4 text-center">
-              <div>
-                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  Completeness
-                </span>
-                <span className="text-sm font-bold text-slate-700 font-mono tabular-nums">
-                  {stats.successPct.toFixed(1)}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  Accuracy
-                </span>
-                <span className="text-sm font-bold text-slate-700 font-mono tabular-nums">
-                  98.2%
-                </span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Right Column: Category Breakdown */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="Business Domain Coverage" subtitle="Status and count aggregates across GM structural sections">
+        {/* "Needs Attention" Area (Occupies 2/3) */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card 
+            title="Needs Attention" 
+            subtitle="Data quality issues requiring human investigation and remediation"
+          >
             <div className="divide-y divide-slate-100">
-              {categories.map((cat) => (
-                <div key={cat.name} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-sm font-semibold text-slate-800 font-display">
-                      {cat.name}
-                    </span>
-                    <div className="flex items-center gap-3 text-xs text-slate-400">
-                      <span>{cat.tablesCount} Tables</span>
-                      <span>•</span>
-                      <span className="tabular-nums">{cat.diffCount.toLocaleString()} Diff</span>
-                    </div>
+              
+              {/* Item 1: Vehicles */}
+              <div className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-lg text-amber-600 mt-0.5">
+                    <AlertTriangle className="w-4 h-4" />
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <span className="text-sm font-bold text-slate-700 font-mono block tabular-nums">
-                        {cat.pct.toFixed(2)}%
-                      </span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">
-                        COMPLETENESS
-                      </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-slate-800 font-display">Vehicles Catalog Reference</h4>
+                      <span className="text-[9px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">High Severity</span>
                     </div>
-                    <Badge type="status" value={cat.status} />
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Engine mapping mismatch • <strong className="text-slate-700 font-mono">42,381 records affected</strong>
+                    </p>
                   </div>
                 </div>
-              ))}
+                <button
+                  onClick={() => {
+                    setSelectedErrorId('ERR-2967');
+                    setActivePage('errors');
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-brand-50 border border-slate-200 hover:border-brand-200 text-slate-700 hover:text-brand text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <span>Investigate</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Item 2: Warranty Claims */}
+              <div className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-50 border border-amber-200/60 rounded-lg text-amber-600 mt-0.5">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-slate-800 font-display">Warranty Claims Assembly</h4>
+                      <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Medium Severity</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Datatype mismatch • <strong className="text-slate-700 font-mono">1,284 records affected</strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedErrorId('ERR-1713');
+                    setActivePage('errors');
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-brand-50 border border-slate-200 hover:border-brand-200 text-slate-700 hover:text-brand text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <span>Investigate</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Item 3: MCS Procedures */}
+              <div className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-red-50 border border-red-200/60 rounded-lg text-red-600 mt-0.5">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-slate-800 font-display">MCS Procedures Drafts</h4>
+                      <span className="text-[9px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">Blocked</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Foreign key deletion block • <strong className="text-slate-700 font-mono">521,878 records affected</strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedErrorId('ERR-3091');
+                    setActivePage('errors');
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-brand-50 border border-slate-200 hover:border-brand-200 text-slate-700 hover:text-brand text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                >
+                  <span>Investigate</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Item 4: Customers Catalog */}
+              <div className="py-4 last:pb-0 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-50 border border-emerald-200/60 rounded-lg text-emerald-600">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 font-display">Customers Catalog</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Validation completed • <strong className="text-emerald-700 font-mono">100% reconciled</strong>
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
+                  Resolved
+                </span>
+              </div>
+
             </div>
           </Card>
         </div>
 
-      </div>
-
-      {/* Bottom Row: Trend Line & Critical Table Highlights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Quality Trend Chart */}
-        <Card className="lg:col-span-2" title="Data Quality Trend" subtitle="Progress curve of accuracy rating vs open anomalies">
-          <div className="h-64 mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorQuality" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#005B94" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#005B94" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                <YAxis domain={[94, 100]} tickLine={false} axisLine={false} tick={{ fill: '#94A3B8', fontSize: 10 }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 11 }}
-                  labelClassName="font-display font-semibold text-slate-800"
-                />
-                <Area type="monotone" dataKey="quality" stroke="#005B94" strokeWidth={2} fillOpacity={1} fill="url(#colorQuality)" name="Data Quality %" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        {/* Critical Discrepancies Checklist */}
-        <Card title="Priority Discrepancies" subtitle="Largest gaps by raw records difference count">
-          <div className="space-y-4">
-            {entities
-              .filter(e => e.difference > 0)
-              .sort((a, b) => b.difference - a.difference)
-              .slice(0, 3)
-              .map((entity) => (
-                <div 
-                  key={entity.id} 
-                  onClick={() => {
-                    setSelectedEntityId(entity.id);
-                    setActivePage('entity');
-                  }}
-                  className="p-3 border border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-slate-100/50 rounded-lg cursor-pointer flex justify-between items-start transition-all"
-                >
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold text-slate-700 font-display">
-                      {entity.name}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block uppercase tracking-wider">
-                      {entity.category}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-bold font-mono text-red-600 block tabular-nums">
-                      -{entity.difference.toLocaleString()}
-                    </span>
-                    <span className="text-[9px] font-semibold text-slate-400 tabular-nums">
-                      {entity.migrationPct.toFixed(1)}% success
-                    </span>
-                  </div>
+        {/* Recent Activity Feed (Occupies 1/3) */}
+        <div className="lg:col-span-1">
+          <Card title="Recent Activity" subtitle="Real-time migration event log">
+            <div className="space-y-4">
+              
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-slate-700 font-medium leading-tight">Customer migration completed</p>
+                  <span className="text-[10px] text-slate-400">2 minutes ago</span>
                 </div>
-              ))}
-          </div>
-        </Card>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-slate-700 font-medium leading-tight">Orders validation passed</p>
+                  <span className="text-[10px] text-slate-400">8 minutes ago</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-slate-700 font-medium leading-tight">Vehicle mapping requires attention</p>
+                  <span className="text-[10px] text-slate-400">12 minutes ago</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-slate-700 font-medium leading-tight">Inventory migration completed</p>
+                  <span className="text-[10px] text-slate-400">18 minutes ago</span>
+                </div>
+              </div>
+
+            </div>
+          </Card>
+        </div>
 
       </div>
 

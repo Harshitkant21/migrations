@@ -185,8 +185,30 @@ export const CascadeAnalysis: React.FC = () => {
         
         {/* Left/Center Graph canvas (occupies 3/4) */}
         <div className="lg:col-span-3 bg-surface border border-slate-200/80 rounded-lg shadow-premium h-[420px] overflow-hidden relative flex flex-col">
-          <div className="absolute top-4 left-4 z-10 bg-surface/85 backdrop-blur border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-slate-500 flex items-center gap-1.5">
-            <Network className="w-3.5 h-3.5 text-brand" /> Click nodes to inspect dependencies
+          <div className="absolute top-4 left-4 z-10 bg-surface/85 backdrop-blur border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-slate-500 flex items-center justify-between gap-4 w-[calc(100%-2rem)]">
+            <div className="flex items-center gap-1.5">
+              <Network className="w-3.5 h-3.5 text-brand" /> 
+              <span>Multi-Tier Domino Effect Tree (Click nodes for blast radius)</span>
+            </div>
+
+            {/* Export Diagram Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const element = document.querySelector('.react-flow__viewport');
+                if (!element) return;
+                const svgData = new XMLSerializer().serializeToString(document.querySelector('.react-flow svg') || element);
+                const blob = new Blob([`<svg xmlns="http://www.w3.org/2000/svg">${svgData}</svg>`], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `nexus_cascade_domino_${activeErrorId}_diagram.svg`;
+                link.click();
+              }}
+              className="px-2.5 py-1 bg-brand-50 border border-brand-200 hover:bg-brand-100 text-brand text-[10px] font-bold rounded transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+            >
+              <span>📷 Export Domino Diagram (SVG/PNG)</span>
+            </button>
           </div>
           <div className="flex-1 h-full min-h-[350px]">
             {loading ? (
