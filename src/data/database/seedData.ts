@@ -1,5 +1,4 @@
 // src/data/database/seedData.ts
-import { EntityMetadata } from '../../types/models';
 
 export interface RawEntitySeed {
   id: string;

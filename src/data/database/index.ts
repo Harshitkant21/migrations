@@ -8,8 +8,183 @@ import {
   CascadeNode,
   Environment,
   RemediationJob,
-  OperationAuditRecord
+  OperationAuditRecord,
+  DatabaseInfo,
+  TableMappingDefinition,
+  TableDetailsMetadata
 } from '../../types/models';
+
+export const databases: DatabaseInfo[] = [
+  {
+    id: 'legacy_db_01',
+    name: 'legacy_db_01 (MySQL)',
+    type: 'MySQL',
+    environment: 'Source',
+    tableCount: 8,
+    description: 'Legacy MySQL database storing legacy vehicle reference catalogs & assembly headers.'
+  },
+  {
+    id: 'legacy_db_02',
+    name: 'legacy_db_02 (PostgreSQL)',
+    type: 'PostgreSQL',
+    environment: 'Source',
+    tableCount: 5,
+    description: 'Legacy PostgreSQL database storing control systems & procedure catalogs.'
+  },
+  {
+    id: 'prod_db_01',
+    name: 'prod_db_01 (PostgreSQL)',
+    type: 'PostgreSQL',
+    environment: 'Target',
+    tableCount: 6,
+    description: 'Target production PostgreSQL database storing core vehicle reference catalogs.'
+  },
+  {
+    id: 'prod_db_02',
+    name: 'prod_db_02 (PostgreSQL)',
+    type: 'PostgreSQL',
+    environment: 'Target',
+    tableCount: 8,
+    description: 'Target production PostgreSQL database storing assembly line procedures and logs.'
+  }
+];
+
+export const tableMappings: TableMappingDefinition[] = [
+  {
+    id: 'map-vehicles',
+    mappingType: 'SPLIT',
+    sourceDatabases: ['legacy_db_01'],
+    sourceTables: ['LEGACY_VHCLS'],
+    targetDatabases: ['prod_db_01'],
+    targetTables: ['vehicles', 'vehicle_specifications'],
+    title: 'Vehicle Master Table Split',
+    description: 'Splits legacy monolithic vehicle table into core vehicle metadata and regional specifications.',
+    status: 'Warning',
+    notes: 'ERR-2967 missing parent reference anomaly affects 42,381 target rows during staging split.',
+    columnMappings: [
+      { id: 'cm-1', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_VHCLS', sourceColumn: 'VHC_ID', sourceDataType: 'VARCHAR(50)', transformationType: 'NORMALIZE', transformationRule: 'Prefix with "GMV-" and strip legacy plant prefix', targetDb: 'prod_db_01', targetTable: 'vehicles', targetColumn: 'vehicle_id', targetDataType: 'VARCHAR(20)', sampleBefore: 'PUNE-X7-2026', sampleAfter: 'GMV-2967', status: 'Warning' },
+      { id: 'cm-2', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_VHCLS', sourceColumn: 'MDL_CD', sourceDataType: 'VARCHAR(20)', transformationType: 'LOOKUP', transformationRule: 'Foreign key lookup against models reference map', targetDb: 'prod_db_01', targetTable: 'vehicles', targetColumn: 'model_id', targetDataType: 'VARCHAR(10)', sampleBefore: 'MDL-556', sampleAfter: 'MDL-556', status: 'Mapped' },
+      { id: 'cm-3', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_VHCLS', sourceColumn: 'YR', sourceDataType: 'VARCHAR(4)', transformationType: 'CAST', transformationRule: 'Cast string year to Integer', targetDb: 'prod_db_01', targetTable: 'vehicles', targetColumn: 'model_year', targetDataType: 'INT', sampleBefore: '"2026"', sampleAfter: '2026', status: 'Mapped' },
+      { id: 'cm-4', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_VHCLS', sourceColumn: 'FULL_SPEC', sourceDataType: 'VARCHAR(500)', transformationType: 'SPLIT', transformationRule: 'Split spec payload into key-value attributes', targetDb: 'prod_db_01', targetTable: 'vehicle_specifications', targetColumn: 'spec_payload', targetDataType: 'JSONB', sampleBefore: 'ENGINE:V8;TRIM:LUX', sampleAfter: '{"engine":"V8"}', status: 'Mapped' }
+    ]
+  },
+  {
+    id: 'map-pcs-merge',
+    mappingType: 'MERGE',
+    sourceDatabases: ['legacy_db_01', 'legacy_db_01'],
+    sourceTables: ['LEGACY_PCS_HDR', 'LEGACY_PCS_SYS'],
+    targetDatabases: ['prod_db_02'],
+    targetTables: ['pcs_systems_master'],
+    title: 'PCS Header + System Table Merge',
+    description: 'Merges legacy header attributes and system codes into a unified master system table.',
+    status: 'Healthy',
+    notes: '2 source tables combined using composite merge key (PCS_CD + SYS_CD).',
+    columnMappings: [
+      { id: 'cm-5', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_PCS_HDR', sourceColumn: 'PCS_CD', sourceDataType: 'VARCHAR(20)', transformationType: 'MERGE_KEY', transformationRule: 'Primary merge join key', targetDb: 'prod_db_02', targetTable: 'pcs_systems_master', targetColumn: 'pcs_id', targetDataType: 'VARCHAR(10)', sampleBefore: 'PCS-880', sampleAfter: 'PCS-880', status: 'Mapped' },
+      { id: 'cm-6', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_PCS_SYS', sourceColumn: 'SYS_CD', sourceDataType: 'VARCHAR(20)', transformationType: 'DIRECT', transformationRule: 'Direct 1-to-1 mapping', targetDb: 'prod_db_02', targetTable: 'pcs_systems_master', targetColumn: 'system_id', targetDataType: 'VARCHAR(15)', sampleBefore: 'SYS-102', sampleAfter: 'SYS-102', status: 'Mapped' },
+      { id: 'cm-7', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_PCS_HDR', sourceColumn: 'PCS_DESC', sourceDataType: 'VARCHAR(250)', transformationType: 'CONCAT', transformationRule: 'Concatenate header title and plant code', targetDb: 'prod_db_02', targetTable: 'pcs_systems_master', targetColumn: 'system_title', targetDataType: 'VARCHAR(200)', sampleBefore: 'Assembly Engine', sampleAfter: 'Assembly Engine (Pune)', status: 'Mapped' }
+    ]
+  },
+  {
+    id: 'map-pcs-procedures',
+    mappingType: 'SINGLE',
+    sourceDatabases: ['legacy_db_01'],
+    sourceTables: ['LEGACY_PCS_PROC'],
+    targetDatabases: ['prod_db_02'],
+    targetTables: ['pcs_procedures'],
+    title: 'PCS Procedures Ingestion',
+    description: 'Direct ingestion with string normalization and FK lookup against subsystems.',
+    status: 'Critical',
+    notes: 'ERR-2967 blocks 150,610 procedures from target promotion.',
+    columnMappings: [
+      { id: 'cm-8', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_PCS_PROC', sourceColumn: 'PROC_CD', sourceDataType: 'VARCHAR(30)', transformationType: 'RENAME', transformationRule: 'Rename column to procedure_id', targetDb: 'prod_db_02', targetTable: 'pcs_procedures', targetColumn: 'procedure_id', targetDataType: 'VARCHAR(20)', sampleBefore: 'PROC_88092', sampleAfter: 'PROC-88092', status: 'Mapped' },
+      { id: 'cm-9', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_PCS_PROC', sourceColumn: 'SUB_SYS_CD', sourceDataType: 'VARCHAR(30)', transformationType: 'LOOKUP', transformationRule: 'Foreign key reference lookup to pcs_subsystems', targetDb: 'prod_db_02', targetTable: 'pcs_procedures', targetColumn: 'subsystem_id', targetDataType: 'VARCHAR(20)', sampleBefore: 'SUB-SYS-998', sampleAfter: 'SUB-SYS-998', status: 'Error' },
+      { id: 'cm-10', sourceDb: 'legacy_db_01', sourceTable: 'LEGACY_PCS_PROC', sourceColumn: 'REV_NUM', sourceDataType: 'VARCHAR(5)', transformationType: 'CAST', transformationRule: 'Cast string to Integer revision number', targetDb: 'prod_db_02', targetTable: 'pcs_procedures', targetColumn: 'revision_no', targetDataType: 'INT', sampleBefore: '"1"', sampleAfter: '1', status: 'Mapped' }
+    ]
+  }
+];
+
+export const getTableDetails = (entityId: string): TableDetailsMetadata => {
+  const entityList = getEntities('PROD');
+  const ent = entityList.find(e => e.id === entityId) || entityList[0];
+
+  const sourceDb = ent.sourceDatabase;
+  const targetDb = ent.targetDatabase;
+
+  if (entityId === 'vehicles') {
+    return {
+      id: 'vehicles',
+      tableName: 'vehicles',
+      databaseId: targetDb,
+      databaseName: 'prod_db_01 (PostgreSQL)',
+      schema: 'public',
+      migrationStatus: 'Warning',
+      sourceDatabases: [sourceDb],
+      sourceTables: ['LEGACY_VHCLS'],
+      targetDatabases: [targetDb],
+      targetTables: ['vehicles', 'vehicle_specifications'],
+      mappingType: 'SPLIT',
+      recordCount: 3500,
+      migratedCount: 3418,
+      failedCount: 82,
+      migrationTimestamp: '2026-09-24 10:30 UTC',
+      migrationDuration: '4m 12s',
+      columns: [
+        { name: 'vehicle_id', dataType: 'VARCHAR', length: '20', isNullable: false, isPrimaryKey: true, isForeignKey: false, sourceTable: 'LEGACY_VHCLS', sourceColumn: 'VHC_ID', transformationType: 'NORMALIZE', diffStatus: 'CHANGED', diffDetail: 'Added GMV- prefix and uppercase formatting' },
+        { name: 'vin_prefix', dataType: 'VARCHAR', length: '10', isNullable: true, isPrimaryKey: false, isForeignKey: false, sourceTable: 'LEGACY_VHCLS', sourceColumn: 'VIN_PRE', transformationType: 'DIRECT', diffStatus: 'UNCHANGED' },
+        { name: 'model_id', dataType: 'VARCHAR', length: '10', isNullable: false, isPrimaryKey: false, isForeignKey: true, referencedTable: 'models', referencedColumn: 'model_id', sourceTable: 'LEGACY_VHCLS', sourceColumn: 'MDL_CD', transformationType: 'LOOKUP', diffStatus: 'UNCHANGED' },
+        { name: 'model_year', dataType: 'INT', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: 'LEGACY_VHCLS', sourceColumn: 'YR', transformationType: 'CAST', diffStatus: 'CHANGED', diffDetail: 'Type converted from VARCHAR(4) to INT' },
+        { name: 'region_id', dataType: 'VARCHAR', length: '5', isNullable: false, isPrimaryKey: false, isForeignKey: true, referencedTable: 'regions', referencedColumn: 'region_id', sourceTable: 'LEGACY_VHCLS', sourceColumn: 'REG_CD', transformationType: 'LOOKUP', diffStatus: 'UNCHANGED' },
+        { name: 'created_at', dataType: 'TIMESTAMP', isNullable: false, defaultValue: 'CURRENT_TIMESTAMP()', isPrimaryKey: false, isForeignKey: false, transformationType: 'DERIVED', diffStatus: 'ADDED', diffDetail: 'New audit timestamp column added in target schema' }
+      ],
+      primaryKeys: ['vehicle_id'],
+      foreignKeys: [
+        { column: 'model_id', referencedTable: 'models', referencedColumn: 'model_id', cardinality: '1-to-Many' },
+        { column: 'region_id', referencedTable: 'regions', referencedColumn: 'region_id', cardinality: '1-to-Many' }
+      ],
+      dependsOn: ['models', 'regions', 'years'],
+      usedBy: ['pcs', 'pcs_systems', 'pcs_procedures'],
+      schemaDiffs: [
+        { columnName: 'created_at', diffType: 'ADDED', targetDetail: 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP()' },
+        { columnName: 'model_year', diffType: 'CHANGED', sourceDetail: 'VARCHAR(4)', targetDetail: 'INT' },
+        { columnName: 'LEGACY_PLANT_CD', diffType: 'REMOVED', sourceDetail: 'VARCHAR(10)' }
+      ]
+    };
+  }
+
+  return {
+    id: ent.id,
+    tableName: ent.name,
+    databaseId: targetDb,
+    databaseName: targetDb === 'prod_db_01' ? 'prod_db_01 (PostgreSQL)' : 'prod_db_02 (PostgreSQL)',
+    schema: 'public',
+    migrationStatus: ent.status,
+    sourceDatabases: [sourceDb],
+    sourceTables: [`LEGACY_${ent.id.toUpperCase()}`],
+    targetDatabases: [targetDb],
+    targetTables: [ent.id],
+    mappingType: ent.mappingType || 'SINGLE',
+    recordCount: ent.sourceCount,
+    migratedCount: ent.prodCount,
+    failedCount: ent.failedCount,
+    migrationTimestamp: '2026-09-24 11:15 UTC',
+    migrationDuration: '2m 45s',
+    columns: [
+      { name: `${ent.id.replace('_tables', '')}_id`, dataType: 'VARCHAR', length: '20', isNullable: false, isPrimaryKey: true, isForeignKey: false, sourceTable: `LEGACY_${ent.id.toUpperCase()}`, sourceColumn: 'ID', transformationType: 'DIRECT', diffStatus: 'UNCHANGED' },
+      { name: 'name', dataType: 'VARCHAR', length: '150', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: `LEGACY_${ent.id.toUpperCase()}`, sourceColumn: 'TITLE', transformationType: 'NORMALIZE', diffStatus: 'UNCHANGED' },
+      { name: 'status', dataType: 'VARCHAR', length: '20', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: `LEGACY_${ent.id.toUpperCase()}`, sourceColumn: 'STATUS_CD', transformationType: 'CASE_MAPPING', diffStatus: 'CHANGED', diffDetail: 'Status code mapped to enum' },
+      { name: 'updated_at', dataType: 'TIMESTAMP', isNullable: false, defaultValue: 'CURRENT_TIMESTAMP()', isPrimaryKey: false, isForeignKey: false, transformationType: 'DERIVED', diffStatus: 'ADDED', diffDetail: 'Target audit column' }
+    ],
+    primaryKeys: [`${ent.id.replace('_tables', '')}_id`],
+    foreignKeys: [],
+    dependsOn: ent.id.includes('procedures') ? ['pcs_subsystems', 'mcs_subsystems'] : ent.id.includes('subsystems') ? ['pcs_systems', 'mcs_systems'] : [],
+    usedBy: ent.id.includes('systems') ? ['pcs_subsystems', 'pcs_procedures'] : [],
+    schemaDiffs: [
+      { columnName: 'updated_at', diffType: 'ADDED', targetDetail: 'TIMESTAMP NOT NULL' },
+      { columnName: 'status', diffType: 'CHANGED', sourceDetail: 'INT', targetDetail: 'VARCHAR(20)' }
+    ]
+  };
+};
 
 // Calculate entity metrics programmatically
 export const getEntities = (env: Environment): EntityMetadata[] => {
@@ -34,19 +209,42 @@ export const getEntities = (env: Environment): EntityMetadata[] => {
       }
     }
 
+    let sourceDatabase = 'legacy_db_01';
+    let targetDatabase = 'prod_db_01';
+    let mappingType: EntityMetadata['mappingType'] = 'SINGLE';
+
+    if (seed.id.startsWith('mcs')) {
+      sourceDatabase = 'legacy_db_02';
+      targetDatabase = 'prod_db_02';
+    } else if (seed.id.startsWith('pcs')) {
+      sourceDatabase = 'legacy_db_01';
+      targetDatabase = 'prod_db_02';
+      if (seed.id === 'pcs_systems') mappingType = 'MERGE';
+    } else if (seed.id === 'vehicles') {
+      mappingType = 'SPLIT';
+    }
+
+    const failedCount = seed.id === 'pcs_procedures' ? 150610 : seed.id === 'mcs_procedures' ? 521878 : seed.id === 'vehicles' ? 42381 : difference;
+
     return {
       id: seed.id,
       name: seed.name,
       category: seed.category,
+      sourceDatabase,
+      targetDatabase,
       sourceCount: seed.sourceCount,
       stgCount: seed.stgCount,
       prodCount: seed.prodCount,
+      failedCount,
       difference,
       migrationPct,
-      status
+      status,
+      mappingType,
+      lastUpdated: '2026-09-24 12:45 UTC'
     };
   });
 };
+
 
 // Simulated schemas for core tables
 export const schemas: Record<string, TableSchema> = {
