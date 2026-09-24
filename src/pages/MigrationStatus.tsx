@@ -184,7 +184,7 @@ export const MigrationStatus: React.FC = () => {
                 <th className="px-5 py-3.5">Target Database & Table</th>
                 <th className="px-5 py-3.5 text-center">Status</th>
                 <th className="px-5 py-3.5 text-right">Progress</th>
-                <th className="px-5 py-3.5 text-right">Records</th>
+                <th className="px-5 py-3.5 text-right">AS-IS Source ➔ TO-BE Expected Rows</th>
                 <th className="px-5 py-3.5 text-center">Actions</th>
               </tr>
             </thead>
@@ -256,9 +256,17 @@ export const MigrationStatus: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Records */}
-                      <td className="px-5 py-3.5 text-right text-[11px]">
-                        <span className="text-slate-500">{ent.sourceCount.toLocaleString()}</span> / <strong className="text-slate-900">{ent.prodCount.toLocaleString()}</strong>
+                      {/* Source Rows ➔ Expected Rows */}
+                      <td className="px-5 py-3.5 text-right text-[11px] font-mono">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-bold" title="AS-IS Source Rows">
+                            Src: {ent.sourceCount.toLocaleString()}
+                          </span>
+                          <span className="text-slate-400">➔</span>
+                          <span className="text-brand bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200 font-bold" title="TO-BE Expected Target Rows">
+                            Exp: {ent.prodCount.toLocaleString()}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Actions */}

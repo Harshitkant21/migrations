@@ -185,16 +185,27 @@ export const TableDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Compact Stats Row */}
-          <div className="flex items-center gap-4 text-xs font-mono font-bold text-slate-700">
-            <span className="bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg">
-              {tableDetails.recordCount.toLocaleString()} rows
+          {/* Compact Stats Row with Source & Expected Target Rows */}
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono font-bold text-slate-700">
+            <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5" title="AS-IS Source Database Row Count">
+              <span className="text-[10px] text-slate-400 uppercase">AS-IS Src Rows:</span>
+              <span className="text-slate-900">{tableDetails.recordCount.toLocaleString()}</span>
             </span>
-            <span className="bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg">
+            <span className="bg-brand-50 border border-brand-200 text-brand px-2.5 py-1 rounded-lg flex items-center gap-1.5" title="TO-BE Target Expected Row Count">
+              <span className="text-[10px] text-brand-400 uppercase">TO-BE Expected:</span>
+              <span className="text-brand-950 font-black">{tableDetails.migratedCount.toLocaleString()}</span>
+            </span>
+            {tableDetails.failedCount > 0 && (
+              <span className="bg-red-50 border border-red-200 text-red-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5" title="Failed / Blocked Rows">
+                <span className="text-[10px] text-red-400 uppercase">Blocked:</span>
+                <span className="font-black">{tableDetails.failedCount.toLocaleString()}</span>
+              </span>
+            )}
+            <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
               {tableDetails.columns.length} columns
             </span>
-            <span className="bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg">
-              {tableDetails.foreignKeys.length} relationships
+            <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+              {tableDetails.foreignKeys.length} FK relationships
             </span>
           </div>
         </div>
