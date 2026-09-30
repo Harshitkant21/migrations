@@ -111,6 +111,49 @@ export const getTableDetails = (entityId: string): TableDetailsMetadata => {
   const sourceDb = ent.sourceDatabase;
   const targetDb = ent.targetDatabase;
 
+  if (entityId === 'orders') {
+    return {
+      id: 'orders',
+      tableName: 'orders',
+      databaseId: targetDb,
+      databaseName: 'pg-cloud-aurora.internal:5432 (PostgreSQL 16.2)',
+      schema: 'core',
+      migrationStatus: 'Warning',
+      sourceDatabases: ['aws-east-pg01.internal (PostgreSQL 14.9)'],
+      sourceTables: ['sales.orders', 'sales.order_items'],
+      targetDatabases: ['pg-cloud-aurora.internal (PostgreSQL 16.2)'],
+      targetTables: ['core.customer_orders'],
+      mappingType: 'MERGE',
+      recordCount: 2431221,
+      migratedCount: 2430981,
+      failedCount: 240,
+      migrationTimestamp: '2026-09-28 10:45 UTC',
+      migrationDuration: '14m 32s',
+      columns: [
+        { name: 'order_id', dataType: 'BIGINT', isNullable: false, isPrimaryKey: true, isForeignKey: false, sourceTable: 'sales.orders', sourceColumn: 'order_id', transformationType: 'MERGE_KEY', diffStatus: 'UNCHANGED' },
+        { name: 'customer_id', dataType: 'UUID', isNullable: false, isPrimaryKey: false, isForeignKey: true, referencedTable: 'core.customer_profile', referencedColumn: 'customer_id', sourceTable: 'sales.orders', sourceColumn: 'customer_id', transformationType: 'LOOKUP', diffStatus: 'UNCHANGED' },
+        { name: 'order_date', dataType: 'TIMESTAMPTZ', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: 'sales.orders', sourceColumn: 'order_date', transformationType: 'DIRECT', diffStatus: 'CHANGED', diffDetail: 'Converted from TIMESTAMP to TIMESTAMPTZ (UTC default)' },
+        { name: 'status', dataType: 'VARCHAR', length: '30', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: 'sales.orders', sourceColumn: 'status', transformationType: 'DIRECT', diffStatus: 'UNCHANGED' },
+        { name: 'total_amount', dataType: 'NUMERIC', length: '12,2', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: 'sales.orders', sourceColumn: 'total_amount', transformationType: 'DIRECT', diffStatus: 'UNCHANGED' },
+        { name: 'discount_amount', dataType: 'NUMERIC', length: '10,2', isNullable: true, defaultValue: '0.00', isPrimaryKey: false, isForeignKey: false, sourceTable: 'sales.orders', sourceColumn: 'discount_code', transformationType: 'CAST', diffStatus: 'CHANGED', diffDetail: 'Type cast from VARCHAR(50) promo string to NUMERIC(10,2)' },
+        { name: 'item_count', dataType: 'INT', isNullable: false, defaultValue: '1', isPrimaryKey: false, isForeignKey: false, transformationType: 'DERIVED', diffStatus: 'ADDED', diffDetail: 'Pre-computed item count from aggregated order_items' },
+        { name: 'items_payload', dataType: 'JSONB', isNullable: false, isPrimaryKey: false, isForeignKey: false, sourceTable: 'sales.order_items', sourceColumn: 'item_id, product_id, qty', transformationType: 'AGGREGATED', diffStatus: 'ADDED', diffDetail: 'Aggregated line items converted to normalized JSONB payload' }
+      ],
+      primaryKeys: ['order_id'],
+      foreignKeys: [
+        { column: 'customer_id', referencedTable: 'core.customer_profile', referencedColumn: 'customer_id', cardinality: '1-to-Many' }
+      ],
+      dependsOn: ['customers', 'users', 'products'],
+      usedBy: ['invoices', 'payments', 'shipments'],
+      schemaDiffs: [
+        { columnName: 'discount_amount', diffType: 'CHANGED', sourceDetail: 'VARCHAR(50)', targetDetail: 'NUMERIC(10,2)' },
+        { columnName: 'items_payload', diffType: 'ADDED', targetDetail: 'JSONB NOT NULL' },
+        { columnName: 'item_count', diffType: 'ADDED', targetDetail: 'INT NOT NULL DEFAULT 1' },
+        { columnName: 'legacy_tax_exempt_flag', diffType: 'REMOVED', sourceDetail: 'CHAR(1)' }
+      ]
+    };
+  }
+
   if (entityId === 'vehicles') {
     return {
       id: 'vehicles',

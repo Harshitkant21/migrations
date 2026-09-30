@@ -10,27 +10,22 @@ export interface RawEntitySeed {
 }
 
 export const rawEntitySeeds: RawEntitySeed[] = [
-  // Reference Group
-  { id: 'makes', name: 'Makes', category: 'Reference', sourceCount: 28, stgCount: 28, prodCount: 23 },
-  { id: 'models', name: 'Models', category: 'Reference', sourceCount: 573, stgCount: 573, prodCount: 556 },
-  { id: 'vehicles', name: 'Vehicles', category: 'Reference', sourceCount: 3500, stgCount: 3500, prodCount: 3418 },
-  { id: 'years', name: 'Years', category: 'Reference', sourceCount: 15, stgCount: 15, prodCount: 15 },
-  { id: 'regions', name: 'Regions', category: 'Reference', sourceCount: 8, stgCount: 8, prodCount: 8 },
+  // Primary Core Enterprise Migration Entities
+  { id: 'orders', name: 'orders', category: 'Reference', sourceCount: 2431221, stgCount: 2431221, prodCount: 2430981 },
+  { id: 'customers', name: 'customers', category: 'Reference', sourceCount: 1420500, stgCount: 1420500, prodCount: 1408390 },
+  { id: 'order_items', name: 'order_items', category: 'Reference', sourceCount: 6850200, stgCount: 6850200, prodCount: 6850200 },
+  { id: 'users', name: 'users', category: 'Reference', sourceCount: 580000, stgCount: 580000, prodCount: 580000 },
+  { id: 'products', name: 'products', category: 'Reference', sourceCount: 125000, stgCount: 125000, prodCount: 125000 },
+  { id: 'payments', name: 'payments', category: 'Reference', sourceCount: 2310000, stgCount: 2310000, prodCount: 2309850 },
+  { id: 'invoices', name: 'invoices', category: 'Reference', sourceCount: 1980000, stgCount: 1980000, prodCount: 1980000 },
+  { id: 'addresses', name: 'addresses', category: 'Reference', sourceCount: 1650000, stgCount: 1650000, prodCount: 1649910 },
+  { id: 'subscriptions', name: 'subscriptions', category: 'Reference', sourceCount: 420000, stgCount: 420000, prodCount: 420000 },
+  { id: 'transactions', name: 'transactions', category: 'Reference', sourceCount: 653410, stgCount: 653410, prodCount: 650000 },
 
-  // MCS Group
-  { id: 'mcs', name: 'MCS', category: 'MCS', sourceCount: 64, stgCount: 64, prodCount: 64 },
-  { id: 'mcs_systems', name: 'MCS Systems', category: 'MCS', sourceCount: 767, stgCount: 767, prodCount: 767 },
-  { id: 'mcs_subsystems', name: 'MCS Subsystems', category: 'MCS', sourceCount: 8635, stgCount: 8635, prodCount: 8635 },
-  { id: 'mcs_procedures', name: 'MCS Procedures', category: 'MCS', sourceCount: 1648344, stgCount: 1648344, prodCount: 1126466 },
-
-  // PCS Group
-  { id: 'pcs', name: 'PCS', category: 'PCS', sourceCount: 3724, stgCount: 3631, prodCount: 3627 },
-  { id: 'pcs_systems', name: 'PCS Systems', category: 'PCS', sourceCount: 42684, stgCount: 42684, prodCount: 41386 },
-  { id: 'pcs_subsystems', name: 'PCS Subsystems', category: 'PCS', sourceCount: 219004, stgCount: 219004, prodCount: 213878 },
-  { id: 'pcs_procedures', name: 'PCS Procedures', category: 'PCS', sourceCount: 8955290, stgCount: 8955290, prodCount: 8804680 },
-
-  // Authoring Group
-  { id: 'draft_tables', name: 'Draft Tables', category: 'Authoring', sourceCount: 120, stgCount: 120, prodCount: 115 },
-  { id: 'published_tables', name: 'Published Tables', category: 'Authoring', sourceCount: 450, stgCount: 450, prodCount: 442 },
-  { id: 'history_tables', name: 'History Tables', category: 'Authoring', sourceCount: 890, stgCount: 890, prodCount: 890 }
+  // Secondary catalog & procedures
+  { id: 'vehicles', name: 'vehicles', category: 'Reference', sourceCount: 3500, stgCount: 3500, prodCount: 3418 },
+  { id: 'models', name: 'models', category: 'Reference', sourceCount: 573, stgCount: 573, prodCount: 556 },
+  { id: 'makes', name: 'makes', category: 'Reference', sourceCount: 28, stgCount: 28, prodCount: 23 },
+  { id: 'audit_log', name: 'audit_log', category: 'Authoring', sourceCount: 850000, stgCount: 850000, prodCount: 820000 },
+  { id: 'published_tables', name: 'published_tables', category: 'Authoring', sourceCount: 450, stgCount: 450, prodCount: 442 }
 ];

@@ -265,3 +265,171 @@ export interface OperationAuditRecord {
   affectedRecords: number;
 }
 
+// -------------------------------------------------------------
+// V0 PLATFORM JOURNEY TYPES
+// -------------------------------------------------------------
+
+export type WorkspaceStep = 
+  | 'setup' 
+  | 'discovery' 
+  | 'definition' 
+  | 'mapping' 
+  | 'validation' 
+  | 'execution' 
+  | 'dashboard' 
+  | 'report';
+
+export type DashboardSubTab = 
+  | 'overview' 
+  | 'status' 
+  | 'mapping_view' 
+  | 'details';
+
+export interface DatabaseConnectionCard {
+  id: string;
+  name: string;
+  type: 'PostgreSQL' | 'MySQL' | 'Oracle' | 'SQL Server' | 'Other';
+  status: 'Connected' | 'Ready' | 'Testing' | 'Failed';
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  ssl: boolean;
+  connectionString?: string;
+  schemaCount: number;
+  tableCount: number;
+  isSource: boolean;
+}
+
+export type MigrationIntentType = 
+  | 'Full migration' 
+  | 'Partial migration' 
+  | 'Schema only' 
+  | 'Data only' 
+  | 'Schema + Data';
+
+export type TargetEnvironmentType = 
+  | 'Development' 
+  | 'Staging' 
+  | 'Production';
+
+export interface MigrationIntent {
+  migrationType: MigrationIntentType;
+  environment: TargetEnvironmentType;
+  objective: string;
+  notes: string;
+}
+
+export interface MigrationConstraints {
+  downtimeRequirement: string;
+  dataTransformationRequired: boolean;
+  dataMaskingRequired: boolean;
+  validationLevel: 'Basic' | 'Standard' | 'Strict (Row-by-row + Checksum)';
+  migrationWindow: string;
+}
+
+export interface DiscoveredTable {
+  id: string;
+  name: string;
+  schema: string;
+  rows: number;
+  columnCount: number;
+  primaryKey: string;
+  foreignKeyCount: number;
+  indexCount: number;
+  status: 'VERIFIED' | 'NEEDS_REVIEW' | 'INVALID';
+  isIncluded: boolean;
+  columnsList?: {
+    name: string;
+    dataType: string;
+    isPk: boolean;
+    isFk: boolean;
+    isNullable: boolean;
+  }[];
+}
+
+export interface ImpactAnalysisMetrics {
+  totalTables: number;
+  totalRecords: string;
+  totalSchemas: number;
+  totalColumns: number;
+  totalIndexes: number;
+  totalForeignKeys: number;
+  directMappings: number;
+  transformations: number;
+  tableSplits: number;
+  tableMerges: number;
+  potentialConflicts: number;
+}
+
+export interface TargetColumnDef {
+  name: string;
+  dataType: string;
+  length?: string;
+  isNullable: boolean;
+  defaultValue?: string;
+  isPrimaryKey: boolean;
+  isForeignKey: boolean;
+  referencedTable?: string;
+  referencedColumn?: string;
+  isUnique: boolean;
+  hasCheck: boolean;
+  checkExpr?: string;
+  indexes: string[];
+}
+
+export interface TargetTableDef {
+  id: string;
+  schema: string;
+  name: string;
+  columns: TargetColumnDef[];
+  isCustom: boolean;
+  ddlPreview?: string;
+}
+
+export type ValidationSeverity = 'Critical' | 'Warning' | 'Passed';
+
+export interface ValidationIssue {
+  id: string;
+  title: string;
+  description: string;
+  domain: 'Schema' | 'Mapping' | 'Transformation' | 'Constraint' | 'Data Quality';
+  severity: ValidationSeverity;
+  entity: string;
+  remediation: string;
+  isResolved: boolean;
+}
+
+export interface ExecutionActivity {
+  id: string;
+  table: string;
+  stage: 'Extracting' | 'Transforming' | 'Validating' | 'Loading';
+  detail: string;
+  status: 'active' | 'completed' | 'warning' | 'error';
+  progressPct: number;
+}
+
+export interface MigrationLogEntry {
+  id: string;
+  timestamp: string;
+  table: string;
+  step: 'Extracting' | 'Transforming' | 'Validating' | 'Loading';
+  status: 'success' | 'warning' | 'error';
+  message: string;
+}
+
+export interface PreviousMigration {
+  id: string;
+  title: string;
+  source: string;
+  target: string;
+  tables: number;
+  records: string;
+  status: 'Completed' | 'Completed with Warnings' | 'Failed';
+  completedAt: string;
+  health: number;
+  type: string;
+  environment: string;
+}
+
+
