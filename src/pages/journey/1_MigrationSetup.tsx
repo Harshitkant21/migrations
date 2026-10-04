@@ -8,64 +8,188 @@ import {
   Database, 
   Server, 
   ArrowRight, 
-  Check, 
-  Plus, 
+  CheckCircle2, 
   Lock, 
-  Sparkles,
-  Link,
-  ShieldCheck
+  RefreshCw,
+  Plus,
+  FileCode,
+  Download,
+  Upload,
+  Check,
+  Globe,
+  Key,
+  ShieldCheck,
+  Edit2
 } from 'lucide-react';
-import { MigrationIntentType, TargetEnvironmentType } from '../../types/models';
+
+interface ExtendedDatabaseInfo {
+  id: string;
+  name: string;
+  type: 'PostgreSQL' | 'MySQL' | 'Oracle' | 'SQL Server';
+  environment: 'Source' | 'Target';
+  host: string;
+  port: string;
+  database: string;
+  username: string;
+  sslMode: string;
+  tableCount: number;
+  description: string;
+}
 
 export const MigrationSetupStep: React.FC = () => {
   const { 
-    sources, 
-    targets, 
-    selectedSourceEngine, 
-    setSelectedSourceEngine,
-    connectionForm, 
-    setConnectionForm, 
-    connectionTesting, 
-    connectionConnected, 
-    connectSource,
-    migrationIntent, 
-    setMigrationIntent,
-    migrationConstraints, 
-    setMigrationConstraints,
     setActiveStep,
     addToast
   } = useGlobalStore();
 
-  const [showConnStr, setShowConnStr] = useState(false);
-  const [showAddSourceModal, setShowAddSourceModal] = useState(false);
-  const [showAddTargetModal, setShowAddTargetModal] = useState(false);
+  const [sourceDbs, setSourceDbs] = useState<ExtendedDatabaseInfo[]>([
+    {
+      id: 'legacy_db_01',
+      name: 'legacy_db_01',
+      type: 'PostgreSQL',
+      environment: 'Source',
+      host: 'aws-east-pg01.internal',
+      port: '5432',
+      database: 'legacy_db_01',
+      username: 'migration_admin',
+      sslMode: 'require',
+      tableCount: 8,
+      description: 'Legacy database storing vehicle reference catalogs & assembly headers.'
+    },
+    {
+      id: 'legacy_db_02',
+      name: 'legacy_db_02',
+      type: 'PostgreSQL',
+      environment: 'Source',
+      host: 'aws-east-pg02.internal',
+      port: '5432',
+      database: 'legacy_db_02',
+      username: 'migration_readonly',
+      sslMode: 'require',
+      tableCount: 5,
+      description: 'Legacy PostgreSQL database storing control systems & procedure catalogs.'
+    }
+  ]);
 
-  const engines = [
-    { id: 'PostgreSQL', name: 'PostgreSQL', port: '5432' },
-    { id: 'MySQL', name: 'MySQL', port: '3306' },
-    { id: 'Oracle', name: 'Oracle', port: '1521' },
-    { id: 'SQL Server', name: 'SQL Server', port: '1433' },
-    { id: 'Other', name: 'Other (JDBC)', port: '5432' }
-  ];
+  const [targetDbs, setTargetDbs] = useState<ExtendedDatabaseInfo[]>([
+    {
+      id: 'prod_db_01',
+      name: 'prod_db_01',
+      type: 'PostgreSQL',
+      environment: 'Target',
+      host: 'pg-cloud-aurora01.internal',
+      port: '5432',
+      database: 'prod_db_01',
+      username: 'prod_migrator',
+      sslMode: 'verify-full',
+      tableCount: 6,
+      description: 'Target production PostgreSQL database storing core vehicle reference catalogs.'
+    },
+    {
+      id: 'prod_db_02',
+      name: 'prod_db_02',
+      type: 'PostgreSQL',
+      environment: 'Target',
+      host: 'pg-cloud-aurora02.internal',
+      port: '5432',
+      database: 'prod_db_02',
+      username: 'prod_migrator',
+      sslMode: 'verify-full',
+      tableCount: 8,
+      description: 'Target production PostgreSQL database storing assembly line procedures and logs.'
+    }
+  ]);
 
-  const migrationTypes: MigrationIntentType[] = [
-    'Full migration',
-    'Partial migration',
-    'Schema only',
-    'Data only',
-    'Schema + Data'
-  ];
+  const [addSourceModalOpen, setAddSourceModalOpen] = useState(false);
+  const [addTargetModalOpen, setAddTargetModalOpen] = useState(false);
 
-  const environments: TargetEnvironmentType[] = [
-    'Development',
-    'Staging',
-    'Production'
-  ];
+  // Connection form state
+  const [dbId, setDbId] = useState('');
+  const [dbType, setDbType] = useState<'PostgreSQL' | 'MySQL' | 'Oracle' | 'SQL Server'>('PostgreSQL');
+  const [dbHost, setDbHost] = useState('');
+  const [dbPort, setDbPort] = useState('5432');
+  const [dbName, setDbName] = useState('');
+  const [dbUsername, setDbUsername] = useState('');
+  const [dbPassword, setDbPassword] = useState('');
+  const [dbSslMode, setDbSslMode] = useState('require');
+
+  const resetForm = () => {
+    setDbId('');
+    setDbType('PostgreSQL');
+    setDbHost('');
+    setDbPort('5432');
+    setDbName('');
+    setDbUsername('');
+    setDbPassword('');
+    setDbSslMode('require');
+  };
+
+  const handleAddSourceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dbName.trim() || !dbHost.trim()) {
+      addToast('Please enter database name and host endpoint.', 'error');
+      return;
+    }
+    const cleanId = (dbId || dbName).toLowerCase().replace(/\s+/g, '_');
+    const newDb: ExtendedDatabaseInfo = {
+      id: cleanId,
+      name: cleanId,
+      type: dbType,
+      environment: 'Source',
+      host: dbHost,
+      port: dbPort || '5432',
+      database: dbName,
+      username: dbUsername || 'db_user',
+      sslMode: dbSslMode,
+      tableCount: 4,
+      description: `Source ${dbType} node storing catalog tables.`
+    };
+    setSourceDbs([...sourceDbs, newDb]);
+    resetForm();
+    setAddSourceModalOpen(false);
+    addToast(`Connected & Added Source DB: ${cleanId}`, 'success');
+  };
+
+  const handleAddTargetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dbName.trim() || !dbHost.trim()) {
+      addToast('Please enter database name and host endpoint.', 'error');
+      return;
+    }
+    const cleanId = (dbId || dbName).toLowerCase().replace(/\s+/g, '_');
+    const newDb: ExtendedDatabaseInfo = {
+      id: cleanId,
+      name: cleanId,
+      type: dbType,
+      environment: 'Target',
+      host: dbHost,
+      port: dbPort || '5432',
+      database: dbName,
+      username: dbUsername || 'prod_user',
+      sslMode: dbSslMode,
+      tableCount: 4,
+      description: `Target ${dbType} node for production migration.`
+    };
+    setTargetDbs([...targetDbs, newDb]);
+    resetForm();
+    setAddTargetModalOpen(false);
+    addToast(`Connected & Added Target DB: ${cleanId}`, 'success');
+  };
+
+  const handleDownloadConfig = () => {
+    const link = document.createElement('a');
+    link.href = '/samples/sample-migration-config.json';
+    link.download = 'sample-migration-config.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addToast('Downloaded single source of truth sample-migration-config.json', 'success');
+  };
 
   return (
-    <div className="space-y-4 font-sans max-w-full">
+    <div className="space-y-6 font-sans max-w-full">
       
-      {/* Compact Page Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2">
@@ -74,461 +198,444 @@ export const MigrationSetupStep: React.FC = () => {
             </span>
             <span className="text-slate-300">•</span>
             <h1 className="text-lg font-bold text-slate-900 tracking-tight">
-              Migration Setup & Configuration Workspace
+              Migration Setup: Multi-Database Connections Credentials
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Configure source connection parameters and define migration boundary rules.
+            Configure full database connection credentials for multiple source and target nodes driven by the Single Source JSON.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 whitespace-nowrap">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Draft saved automatically
-          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadConfig}
+            icon={Download}
+            iconPosition="left"
+            className="text-xs font-semibold border-slate-300 whitespace-nowrap"
+          >
+            Download Config JSON
+          </Button>
 
           <Button
             variant="primary"
             size="sm"
             onClick={() => setActiveStep('discovery')}
-            className="text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-xs h-8 px-3 whitespace-nowrap font-medium"
+            icon={ArrowRight}
+            iconPosition="right"
+            className="text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-xs font-bold whitespace-nowrap"
           >
-            <span>Continue to Discovery</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+            Proceed to Source Discovery
           </Button>
         </div>
       </div>
 
-      {/* Main 2-Column Structured Configuration Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* LEFT COLUMN: Source Connection & Multi-Node Topology (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-2xs p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Database className="w-4 h-4 text-slate-700" />
-              <h2 className="text-xs font-bold text-slate-900 tracking-tight uppercase">
-                Source Connection Parameters
-              </h2>
-            </div>
-            {connectionConnected ? (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/70 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                Connected: aws-east-pg01:5432
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200/70 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                Pending Connection
-              </span>
-            )}
+      {/* SINGLE SOURCE OF TRUTH JSON BANNER */}
+      <div className="bg-slate-900 text-white rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <FileCode className="w-5 h-5" />
           </div>
-
-          {/* Engine Selector Chips */}
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1.5 font-semibold uppercase tracking-wider">
-              Source Database Engine
-            </label>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-              {engines.map((eng) => {
-                const isSelected = selectedSourceEngine === eng.id;
-                return (
-                  <button
-                    key={eng.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSourceEngine(eng.id);
-                      setConnectionForm({ port: eng.port });
-                    }}
-                    className={`px-2 py-1.5 rounded-lg border text-center transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'border-slate-900 bg-slate-900 text-white font-medium shadow-xs' 
-                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    <div className="text-xs font-semibold whitespace-nowrap truncate">{eng.name}</div>
-                    <div className={`text-[10px] font-mono ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
-                      Port {eng.port}
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="font-bold text-white text-sm flex items-center gap-2">
+              <span>SINGLE SOURCE OF TRUTH: Migration Config JSON</span>
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                Active Config
+              </span>
             </div>
-          </div>
-
-          {/* Connection Inputs */}
-          <div className="space-y-3 font-mono text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] text-slate-500 mb-1 font-semibold uppercase">Host / Endpoint</label>
-                <input
-                  type="text"
-                  value={connectionForm.host}
-                  onChange={(e) => setConnectionForm({ host: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:border-slate-900 focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-500 mb-1 font-semibold uppercase">Port</label>
-                <input
-                  type="text"
-                  value={connectionForm.port}
-                  onChange={(e) => setConnectionForm({ port: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:border-slate-900 focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[10px] text-slate-500 mb-1 font-semibold uppercase">Database Name</label>
-                <input
-                  type="text"
-                  value={connectionForm.database}
-                  onChange={(e) => setConnectionForm({ database: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:border-slate-900 focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-500 mb-1 font-semibold uppercase">Username</label>
-                <input
-                  type="text"
-                  value={connectionForm.username}
-                  onChange={(e) => setConnectionForm({ username: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono focus:bg-white focus:border-slate-900 focus:outline-hidden"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-500 mb-1 font-semibold uppercase">Password</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value="••••••••••••"
-                    readOnly
-                    className="w-full px-3 py-1.5 bg-slate-100 border border-slate-300 rounded-lg text-xs font-mono text-slate-400 tracking-widest"
-                  />
-                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
-            </div>
-
-            {/* SSL & Connection String Toggle */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={connectionForm.ssl}
-                  onChange={(e) => setConnectionForm({ ssl: e.target.checked })}
-                  className="rounded border-slate-300 text-slate-900"
-                />
-                <span className="text-slate-700 text-xs">Enable SSL Mode (sslmode=require)</span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setShowConnStr(!showConnStr)}
-                className="text-slate-500 hover:text-slate-800 text-[11px] underline cursor-pointer"
-              >
-                {showConnStr ? 'Hide URI' : 'Show Connection URI'}
-              </button>
-            </div>
-
-            {showConnStr && (
-              <div className="p-2 rounded bg-slate-900 text-emerald-400 font-mono text-[11px] break-all border border-slate-800">
-                {connectionForm.connectionString}
-              </div>
-            )}
-          </div>
-
-          {/* Test Connection Button & Handshake Result */}
-          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={connectSource}
-              loading={connectionTesting}
-              className="font-sans font-medium text-xs whitespace-nowrap"
-            >
-              {connectionConnected ? 'Test Connection Again' : 'Connect Source'}
-            </Button>
-
-            <span className="text-xs text-slate-400 font-sans">
-              Protocol: Native libpq binary handshake
-            </span>
-          </div>
-
-          {/* Multi-Source / Multi-Target Topology Compact Strip */}
-          <div className="pt-3 border-t border-slate-100 space-y-2 font-sans">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span className="font-semibold text-slate-700">Topology Nodes</span>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setShowAddSourceModal(true)}
-                  className="text-slate-700 hover:text-slate-900 underline text-xs cursor-pointer whitespace-nowrap"
-                >
-                  + Add Source
-                </button>
-                <span className="text-slate-300">|</span>
-                <button 
-                  onClick={() => setShowAddTargetModal(true)}
-                  className="text-slate-700 hover:text-slate-900 underline text-xs cursor-pointer whitespace-nowrap"
-                >
-                  + Add Target
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-slate-800 truncate">Production PostgreSQL</div>
-                  <div className="text-[11px] text-slate-500">15 schemas • 245 tables</div>
-                </div>
-                <Badge variant="success" size="sm">Source</Badge>
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-slate-800 truncate">PostgreSQL Production</div>
-                  <div className="text-[11px] text-slate-500">12 schemas • 245 tables</div>
-                </div>
-                <Badge variant="info" size="sm">Target</Badge>
-              </div>
+            <div className="text-[11px] text-slate-400 font-sans mt-0.5">
+              The migration script executes strictly based on the defined Migration Config JSON (<strong className="font-mono text-slate-200">sample-migration-config.json</strong>) containing database connection strings & table rules.
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Migration Configuration & Intent (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-2xs p-5 space-y-4 font-sans">
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="dark"
+            size="sm"
+            onClick={handleDownloadConfig}
+            icon={Download}
+            iconPosition="left"
+            className="font-mono text-xs whitespace-nowrap"
+          >
+            Download JSON
+          </Button>
+        </div>
+      </div>
+
+      {/* MULTI-DATABASE CONNECTION MANAGEMENT GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* SOURCE DATABASES PANEL */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Server className="w-4 h-4 text-slate-700" />
+              <Database className="w-4 h-4 text-slate-900" />
               <h2 className="text-xs font-bold text-slate-900 tracking-tight uppercase">
-                Migration Intent & Scope
+                Source Databases ({sourceDbs.length} Connected)
               </h2>
             </div>
-            <Badge variant="neutral" size="sm">
-              Rules Active
-            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { resetForm(); setAddSourceModalOpen(true); }}
+              icon={Plus}
+              iconPosition="left"
+              className="text-xs font-bold border-slate-300 text-slate-800 bg-slate-50 hover:bg-slate-100 whitespace-nowrap"
+            >
+              Add Source DB
+            </Button>
           </div>
 
-          {/* Migration Type Chips */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Migration Type
-            </label>
-            <div className="flex flex-wrap gap-1.5 text-xs">
-              {migrationTypes.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setMigrationIntent({ migrationType: t })}
-                  className={`px-2.5 py-1 rounded-md border text-xs cursor-pointer transition-all whitespace-nowrap ${
-                    migrationIntent.migrationType === t
-                      ? 'bg-slate-900 text-white font-semibold border-slate-900 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Target Environment */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Target Environment
-            </label>
-            <div className="grid grid-cols-3 gap-1.5 text-xs">
-              {environments.map(env => (
-                <button
-                  key={env}
-                  type="button"
-                  onClick={() => setMigrationIntent({ environment: env })}
-                  className={`py-1 rounded-md border text-center cursor-pointer transition-all whitespace-nowrap ${
-                    migrationIntent.environment === env
-                      ? 'bg-slate-900 text-white font-semibold border-slate-900 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {env}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Migration Constraints Grid */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5 text-xs">
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Operational Constraints
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">DOWNTIME REQUIREMENT</label>
-                <input
-                  type="text"
-                  value={migrationConstraints.downtimeRequirement}
-                  onChange={(e) => setMigrationConstraints({ downtimeRequirement: e.target.value })}
-                  className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">VALIDATION LEVEL</label>
-                <select
-                  value={migrationConstraints.validationLevel}
-                  onChange={(e) => setMigrationConstraints({ validationLevel: e.target.value as any })}
-                  className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs text-slate-800"
-                >
-                  <option value="Basic">Basic (Row Count)</option>
-                  <option value="Standard">Standard (Schema + PK)</option>
-                  <option value="Strict (Row-by-row + Checksum)">Strict (Row + Checksum)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">DATA TRANSFORMATION</label>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setMigrationConstraints({ dataTransformationRequired: true })}
-                    className={`flex-1 py-0.5 rounded border text-[11px] font-bold cursor-pointer ${
-                      migrationConstraints.dataTransformationRequired ? 'bg-slate-900 text-white' : 'bg-white text-slate-600'
-                    }`}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMigrationConstraints({ dataTransformationRequired: false })}
-                    className={`flex-1 py-0.5 rounded border text-[11px] font-bold cursor-pointer ${
-                      !migrationConstraints.dataTransformationRequired ? 'bg-slate-900 text-white' : 'bg-white text-slate-600'
-                    }`}
-                  >
-                    No
-                  </button>
+          <div className="space-y-3 font-mono text-xs">
+            {sourceDbs.map((db) => (
+              <div key={db.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span className="font-bold text-slate-900 text-sm">{db.id}</span>
+                    <span className="text-[10px] text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded font-semibold">{db.type}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                    ✓ Connected ({db.tableCount} Tables)
+                  </span>
+                </div>
+                
+                <div className="text-[11px] text-slate-600 font-sans">{db.description}</div>
+                
+                {/* Full Connection Credentials Grid */}
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-white p-2.5 rounded-lg border border-slate-200/80">
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">Host & Port</span>
+                    <span className="text-slate-800 font-medium">{db.host}:{db.port}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">Database Name</span>
+                    <span className="text-slate-800 font-medium">{db.database}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">User Credential</span>
+                    <span className="text-slate-800 font-medium">{db.username}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">SSL Mode</span>
+                    <span className="text-emerald-700 font-bold">{db.sslMode}</span>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
 
-              <div>
-                <label className="block text-[10px] text-slate-400 mb-0.5">PII MASKING</label>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setMigrationConstraints({ dataMaskingRequired: true })}
-                    className={`flex-1 py-0.5 rounded border text-[11px] font-bold cursor-pointer ${
-                      migrationConstraints.dataMaskingRequired ? 'bg-slate-900 text-white' : 'bg-white text-slate-600'
-                    }`}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMigrationConstraints({ dataMaskingRequired: false })}
-                    className={`flex-1 py-0.5 rounded border text-[11px] font-bold cursor-pointer ${
-                      !migrationConstraints.dataMaskingRequired ? 'bg-slate-900 text-white' : 'bg-white text-slate-600'
-                    }`}
-                  >
-                    No
-                  </button>
+        {/* TARGET DATABASES PANEL */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Server className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-xs font-bold text-slate-900 tracking-tight uppercase">
+                Target Databases ({targetDbs.length} Connected)
+              </h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { resetForm(); setAddTargetModalOpen(true); }}
+              icon={Plus}
+              iconPosition="left"
+              className="text-xs font-bold border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 whitespace-nowrap"
+            >
+              Add Target DB
+            </Button>
+          </div>
+
+          <div className="space-y-3 font-mono text-xs">
+            {targetDbs.map((db) => (
+              <div key={db.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <span className="font-bold text-slate-900 text-sm">{db.id}</span>
+                    <span className="text-[10px] text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded font-semibold">{db.type}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                    ✓ Connected ({db.tableCount} Tables)
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-slate-600 font-sans">{db.description}</div>
+                
+                {/* Full Connection Credentials Grid */}
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-white p-2.5 rounded-lg border border-slate-200/80">
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">Host & Port</span>
+                    <span className="text-slate-800 font-medium">{db.host}:{db.port}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">Database Name</span>
+                    <span className="text-slate-800 font-medium">{db.database}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">User Credential</span>
+                    <span className="text-slate-800 font-medium">{db.username}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] block uppercase">SSL Mode</span>
+                    <span className="text-emerald-700 font-bold">{db.sslMode}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-
-          {/* Compact Objective & Notes */}
-          <div className="space-y-2 font-mono text-xs">
-            <div>
-              <label className="block text-[10px] text-slate-500 mb-0.5 font-semibold uppercase">MIGRATION OBJECTIVE</label>
-              <input
-                type="text"
-                value={migrationIntent.objective}
-                onChange={(e) => setMigrationIntent({ objective: e.target.value })}
-                className="w-full px-2.5 py-1 bg-slate-50 border border-slate-300 rounded text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] text-slate-500 mb-0.5 font-semibold uppercase">OPERATIONAL NOTES</label>
-              <input
-                type="text"
-                value={migrationIntent.notes}
-                onChange={(e) => setMigrationIntent({ notes: e.target.value })}
-                className="w-full px-2.5 py-1 bg-slate-50 border border-slate-300 rounded text-xs"
-              />
-            </div>
-          </div>
-
         </div>
 
       </div>
 
-      {/* Add Source / Target Modals */}
+      {/* MODAL FOR ADDING SOURCE DB WITH FULL CREDENTIALS */}
       <Modal
-        isOpen={showAddSourceModal}
-        onClose={() => setShowAddSourceModal(false)}
-        title="Add Source Cluster Node"
-        subtitle="Connect another source cluster for multi-database ingestion."
-        maxWidth="md"
+        isOpen={addSourceModalOpen}
+        onClose={() => setAddSourceModalOpen(false)}
+        title="Add Source Database Connection"
+        subtitle="Configure full database connection credentials for the source node."
+        maxWidth="lg"
       >
-        <div className="space-y-3 font-mono text-xs">
-          <div>
-            <label className="block text-slate-700 font-bold mb-1">Engine</label>
-            <select className="w-full px-3 py-1.5 border border-slate-300 rounded-lg">
-              <option>MySQL 8.0</option>
-              <option>Oracle Database 19c</option>
-              <option>Microsoft SQL Server</option>
-            </select>
+        <form onSubmit={handleAddSourceSubmit} className="space-y-4 font-sans text-xs">
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Database Alias / Identifier</label>
+              <input
+                type="text"
+                placeholder="e.g. legacy_db_03"
+                value={dbId}
+                onChange={(e) => setDbId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Database Engine / Type</label>
+              <select
+                value={dbType}
+                onChange={(e) => setDbType(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-mono"
+              >
+                <option value="PostgreSQL">PostgreSQL</option>
+                <option value="MySQL">MySQL</option>
+                <option value="Oracle">Oracle</option>
+                <option value="SQL Server">SQL Server</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="block text-slate-700 font-bold mb-1">Host Endpoint</label>
-            <input type="text" placeholder="mysql-shard-02.internal" className="w-full px-3 py-1.5 border border-slate-300 rounded-lg" />
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-slate-700 font-bold mb-1">Host Endpoint / IP Address</label>
+              <input
+                type="text"
+                placeholder="e.g. aws-east-pg03.internal"
+                value={dbHost}
+                onChange={(e) => setDbHost(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Port</label>
+              <input
+                type="text"
+                placeholder="5432"
+                value={dbPort}
+                onChange={(e) => setDbPort(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowAddSourceModal(false)}>Cancel</Button>
-            <Button variant="primary" size="sm" onClick={() => {
-              setShowAddSourceModal(false);
-              addToast('Added secondary source database node', 'success');
-            }}>Save Source</Button>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Database Name</label>
+              <input
+                type="text"
+                placeholder="e.g. legacy_catalog_db"
+                value={dbName}
+                onChange={(e) => setDbName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">SSL Security Mode</label>
+              <select
+                value={dbSslMode}
+                onChange={(e) => setDbSslMode(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-mono"
+              >
+                <option value="require font-mono">require (Encrypted SSL)</option>
+                <option value="verify-full">verify-full (Strict CA Verification)</option>
+                <option value="prefer">prefer</option>
+                <option value="disable">disable</option>
+              </select>
+            </div>
           </div>
-        </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Username Credential</label>
+              <input
+                type="text"
+                placeholder="e.g. migration_user"
+                value={dbUsername}
+                onChange={(e) => setDbUsername(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••••••"
+                value={dbPassword}
+                onChange={(e) => setDbPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button variant="outline" size="sm" type="button" onClick={() => setAddSourceModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" type="submit" className="bg-slate-900 hover:bg-slate-800 text-white font-bold">
+              Test Connection & Save Source DB
+            </Button>
+          </div>
+        </form>
       </Modal>
 
+      {/* MODAL FOR ADDING TARGET DB WITH FULL CREDENTIALS */}
       <Modal
-        isOpen={showAddTargetModal}
-        onClose={() => setShowAddTargetModal(false)}
-        title="Add Target Destination"
-        subtitle="Configure additional replica, cache or data warehouse destination."
-        maxWidth="md"
+        isOpen={addTargetModalOpen}
+        onClose={() => setAddTargetModalOpen(false)}
+        title="Add Target Database Connection"
+        subtitle="Configure full database connection credentials for the production target node."
+        maxWidth="lg"
       >
-        <div className="space-y-3 font-mono text-xs">
-          <div>
-            <label className="block text-slate-700 font-bold mb-1">Target Engine</label>
-            <select className="w-full px-3 py-1.5 border border-slate-300 rounded-lg">
-              <option>PostgreSQL Analytics Warehouse</option>
-              <option>Amazon Aurora Read Replica</option>
-              <option>Snowflake Stage</option>
-            </select>
+        <form onSubmit={handleAddTargetSubmit} className="space-y-4 font-sans text-xs">
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Database Alias / Identifier</label>
+              <input
+                type="text"
+                placeholder="e.g. prod_db_03"
+                value={dbId}
+                onChange={(e) => setDbId(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Database Engine / Type</label>
+              <select
+                value={dbType}
+                onChange={(e) => setDbType(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-mono"
+              >
+                <option value="PostgreSQL">PostgreSQL</option>
+                <option value="MySQL">MySQL</option>
+                <option value="Oracle">Oracle</option>
+                <option value="SQL Server">SQL Server</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="block text-slate-700 font-bold mb-1">Target Host</label>
-            <input type="text" placeholder="analytics-dw-stage.internal" className="w-full px-3 py-1.5 border border-slate-300 rounded-lg" />
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-slate-700 font-bold mb-1">Host Endpoint / IP Address</label>
+              <input
+                type="text"
+                placeholder="e.g. pg-cloud-aurora03.internal"
+                value={dbHost}
+                onChange={(e) => setDbHost(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Port</label>
+              <input
+                type="text"
+                placeholder="5432"
+                value={dbPort}
+                onChange={(e) => setDbPort(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setShowAddTargetModal(false)}>Cancel</Button>
-            <Button variant="primary" size="sm" onClick={() => {
-              setShowAddTargetModal(false);
-              addToast('Added secondary target destination', 'success');
-            }}>Save Target</Button>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Database Name</label>
+              <input
+                type="text"
+                placeholder="e.g. prod_master_db"
+                value={dbName}
+                onChange={(e) => setDbName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">SSL Security Mode</label>
+              <select
+                value={dbSslMode}
+                onChange={(e) => setDbSslMode(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white font-mono"
+              >
+                <option value="verify-full">verify-full (Strict CA Verification)</option>
+                <option value="require">require (Encrypted SSL)</option>
+                <option value="prefer">prefer</option>
+                <option value="disable">disable</option>
+              </select>
+            </div>
           </div>
-        </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Username Credential</label>
+              <input
+                type="text"
+                placeholder="e.g. prod_migrator"
+                value={dbUsername}
+                onChange={(e) => setDbUsername(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••••••"
+                value={dbPassword}
+                onChange={(e) => setDbPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button variant="outline" size="sm" type="button" onClick={() => setAddTargetModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+              Test Connection & Save Target DB
+            </Button>
+          </div>
+        </form>
       </Modal>
 
     </div>
   );
 };
+

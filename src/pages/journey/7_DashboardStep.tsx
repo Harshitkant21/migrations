@@ -96,12 +96,12 @@ export const DashboardStep: React.FC = () => {
       {/* Global Health KPI Banner */}
       <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-base border border-emerald-200/60">
+          <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold text-sm border border-emerald-300 shrink-0 whitespace-nowrap">
             94.8%
           </div>
-          <div>
-            <div className="text-[10px] text-slate-400 font-medium">MIGRATION HEALTH</div>
-            <div className="text-slate-900 font-bold text-sm mt-0.5">Optimal Execution</div>
+          <div className="min-w-0">
+            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">MIGRATION HEALTH</div>
+            <div className="text-slate-900 font-bold text-sm mt-0.5 whitespace-nowrap truncate">Optimal Execution</div>
           </div>
         </div>
 

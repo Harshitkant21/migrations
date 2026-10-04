@@ -1,0 +1,85 @@
+{
+  "reportMetadata": {
+    "runId": "MIG-2026-0928-PROD",
+    "title": "PostgreSQL Target Production Migration Executive Report",
+    "generatedAt": "2026-10-04T17:23:00Z",
+    "environment": "Production Target",
+    "executedBy": "Alex Rivera (Lead Data Architect)",
+    "status": "Completed with Warnings"
+  },
+  "sourceDatabase": {
+    "engine": "PostgreSQL 14.9",
+    "name": "aws-east-pg01.internal",
+    "tableCount": 245,
+    "totalRecords": 2781200
+  },
+  "targetDatabase": {
+    "engine": "PostgreSQL 16.2 (Aurora)",
+    "name": "pg-cloud-aurora.internal",
+    "tableCount": 221,
+    "reconciledRecords": 2074800
+  },
+  "summaryMetrics": {
+    "overallHealthPct": 94.8,
+    "totalTables": 245,
+    "migratedTables": 221,
+    "warningTables": 18,
+    "failedTables": 6,
+    "sourceRecordCount": 2781200,
+    "migratedRecordCount": 2074800,
+    "failedRecordCount": 193000,
+    "executionDuration": "18m 42s"
+  },
+  "objectResults": [
+    {
+      "order": 1,
+      "tableName": "makes",
+      "sourceRows": 5,
+      "expectedTargetRows": 5,
+      "migratedRows": 5,
+      "failedRows": 0,
+      "reconciliationPct": 100.0,
+      "status": "Healthy"
+    },
+    {
+      "order": 2,
+      "tableName": "models",
+      "sourceRows": 17,
+      "expectedTargetRows": 17,
+      "migratedRows": 17,
+      "failedRows": 0,
+      "reconciliationPct": 100.0,
+      "status": "Healthy"
+    },
+    {
+      "order": 3,
+      "tableName": "vehicles",
+      "sourceRows": 3500,
+      "expectedTargetRows": 3418,
+      "migratedRows": 3418,
+      "failedRows": 82,
+      "reconciliationPct": 97.6,
+      "status": "Warning"
+    },
+    {
+      "order": 4,
+      "tableName": "pcs_procedures",
+      "sourceRows": 1648344,
+      "expectedTargetRows": 1126466,
+      "migratedRows": 1126466,
+      "failedRows": 150610,
+      "reconciliationPct": 68.3,
+      "status": "Critical"
+    }
+  ],
+  "validationSummary": {
+    "readinessScore": 100,
+    "criticalIssuesResolved": 2,
+    "passedChecks": 42
+  },
+  "auditSignoff": {
+    "approvedBy": "Sarah Connor (Lead QA)",
+    "signoffTimestamp": "2026-10-04T17:20:00Z",
+    "complianceApproved": true
+  }
+}

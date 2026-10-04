@@ -1,389 +1,209 @@
-# Nexus Migrate — Comprehensive Functionality & Team Onboarding Handbook
+# Database Migration Platform V0 — Comprehensive Functionality & User Journey Handbook
 
-Welcome to **Nexus Migrate**! This document serves as the single source of truth for the product functionality, user interface behavior, data models, state architecture, and operational workflows of the platform.
+Welcome to the **Database Migration Platform V0** handbook. This document serves as the authoritative single source of truth for product functionality, supported migration workflows, user interface behavior, data models, state management, and backend operational requirements.
 
-Whether you are a **newly joined developer, QA engineer, database architect, or product manager**, reading this handbook will give you a complete end-to-end understanding of how the system works without needing to trace every line of code.
+Whether you are a **frontend developer, backend engineer, QA lead, database architect, or product reviewer**, this handbook provides a complete end-to-end understanding of how the platform operates across its 8-step migration journey.
 
 ---
 
 ## Table of Contents
-1. [Product Vision & Core Purpose](#1-product-vision--core-purpose)
-2. [UX Philosophy: Progressive Disclosure (Levels 1–5)](#2-ux-philosophy-progressive-disclosure-levels-15)
-3. [Data & Migration Architecture](#3-data--migration-architecture)
-4. [Velocity Motors Automotive Domain Story](#4-velocity-motors-automotive-domain-story)
-5. [Complete Screen-by-Screen Functional Reference](#5-complete-screen-by-screen-functional-reference)
-   - [Screen 1: Executive Dashboard (Level 1 Overview)](#screen-1-executive-dashboard-level-1-overview)
-   - [Screen 2: Migration Health & Reconciliation](#screen-2-migration-health--reconciliation)
-   - [Screen 3: Entity Explorer & Data Grid](#screen-3-entity-explorer--data-grid)
-   - [Screen 4: Error Centre Workbench & Diagnostic Drawer](#screen-4-error-centre-workbench--diagnostic-drawer)
-   - [Screen 5: Cascade Impact Analysis & Domino Engine](#screen-5-cascade-impact-analysis--domino-engine)
-   - [Screen 6: Schema Explorer & ER Map](#screen-6-schema-explorer--er-map)
-   - [Screen 7: Authoring Changes Audit](#screen-7-authoring-changes-audit)
-   - [Screen 8: Page Drilldown Directory](#screen-8-page-drilldown-directory)
-   - [Screen 9: Operational Audit Logs & Execution Replay](#screen-9-operational-audit-logs--execution-replay)
-6. [Detailed End-to-End Operational Workflows](#6-detailed-end-to-end-operational-workflows)
-7. [State Architecture & Mock Service Boundary](#7-state-architecture--mock-service-boundary)
-8. [Developer Onboarding & Customization Guide](#8-developer-onboarding--customization-guide)
+1. [Product Purpose & Scope](#1-product-purpose--scope)
+2. [Supported Migration Workflow (8-Step Journey)](#2-supported-migration-workflow-8-step-journey)
+3. [Step-by-Step Functional Reference](#3-step-by-step-functional-reference)
+   - [Step 1: Migration Setup — Source & Target Connections](#step-1-migration-setup--source--target-connections)
+   - [Step 2: Source Database Discovery](#step-2-source-database-discovery)
+   - [Step 3: Target Schema Discovery & Review](#step-3-target-schema-discovery--review)
+   - [Step 4: Mapping Workspace & JSON Integration](#step-4-mapping-workspace--json-integration)
+   - [Step 5: Pre-Flight Migration Validation](#step-5-pre-flight-migration-validation)
+   - [Step 6: Sequential Migration Execution](#step-6-sequential-migration-execution)
+   - [Step 7: Migration Dashboard & Reconciliation](#step-7-migration-dashboard--reconciliation)
+   - [Step 8: Final Migration Report & Audit Artifact](#step-8-final-migration-report--audit-artifact)
+4. [User Actions & Expected System Outcomes](#4-user-actions--expected-system-outcomes)
+5. [Error & Failure State Behavior](#5-error--failure-state-behavior)
+6. [Draft & State Persistence Behavior](#6-draft--state-persistence-behavior)
+7. [Current V0 Limitations vs Future Backend Capabilities](#7-current-v0-limitations-vs-future-backend-capabilities)
 
 ---
 
-## 1. Product Vision & Core Purpose
+## 1. Product Purpose & Scope
 
-**Nexus Migrate** is an enterprise database migration intelligence and operations command center built for **Velocity Motors** (Automotive Manufacturing & Authoring Systems Migration).
+The **Database Migration Platform V0** is an enterprise database migration intelligence and orchestration platform designed to migrate PostgreSQL databases safely, predictably, and with complete visibility.
 
-### Why Nexus Migrate Exists
-Enterprise database migrations (such as moving legacy vehicle authoring, manufacturing control systems, and part catalogs from legacy databases to cloud schemas) frequently fail due to five critical engineering challenges:
-
-1. **Hidden Referential Cascades:** Deleting or altering a single upstream parent reference row silently breaks tens or hundreds of thousands of downstream child records.
-2. **Opaque Transformation Rules:** Ingested string fields undergo plant-code trimming or UUID transformations without visual proof of why Left-Hand Side (LHS) != Right-Hand Side (RHS).
-3. **Lack of Pre-Flight Dry-Run Validation:** Executing direct database commits without sandbox validation causes unexpected foreign key constraint crashes in production.
-4. **Non-Audited Manual Fixes:** Ad-hoc database patches applied in production lack rollback trails, operator comments, or typed environment safety verification keys.
-5. **Passive Health Dashboards:** Traditional migration dashboards show static error counts without explaining root causes, legacy source comparisons, or downstream blast radius.
-
-Nexus Migrate solves these challenges by combining **Migration Reconciliation**, **Plain-English Error Diagnosis**, **Multi-Tier Domino Blast Radius Analysis**, **4-Method Value Remediation**, **STG Sandbox Pre-Flight Dry Runs**, and **Immutable Operational Auditing** into a single command center.
+### Key Engineering Challenges Solved
+1. **Opaque Connection Failures:** Clear step-by-step PostgreSQL source and target database connection validation prior to discovery.
+2. **Hidden Referential & Schema Constraints:** Automated inspection of discovered source tables, data types, primary keys, foreign key constraints, and indexes.
+3. **Target Schema Disconnect:** Direct discovery of target database schemas instead of manual, error-prone frontend schema creation.
+4. **Complex JSON-Driven Schema Mapping:** Simplified mapping review with JSON upload, sample JSON download, missing mapping detection, and field-level override capabilities.
+5. **Non-Technical Validation Feedback:** Plain-English validation readiness reporting (`"Is this migration ready to run?"`) with blocking issue isolation.
+6. **Predictable Sequential Execution:** Strict sequential processing (table-by-table) ensuring referential integrity and dependency ordering without race conditions.
+7. **Audit-Friendly Reporting:** Downloadable executive migration report for compliance and audit sign-off.
 
 ---
 
-## 2. UX Philosophy: Progressive Disclosure (Levels 1–5)
+## 2. Supported Migration Workflow (8-Step Journey)
 
-To ensure that anyone opening the application can understand the migration state within **30 seconds**, Nexus Migrate structures information across **5 progressive levels**:
+The V0 platform enforces an 8-step sequential workflow:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ LEVEL 1: OVERVIEW (Dashboard)                                                          │
-│ "What is happening?" ──► 94.8% Health | 92% Progress | 6 Issues Needing Attention       │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼ (Click "Investigate" / "Review Issues")
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ LEVEL 2: INVESTIGATION (Migration Health / Entity Explorer)                            │
-│ "Where is the problem?" ──► Table-level status: Vehicles (42,381 failed rows)           │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼ (Click specific error row)
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ LEVEL 3: DIAGNOSIS (Error Detail Drawer)                                               │
-│ "Why is this happening?" ──► Plain-English explanation + Plain Before/After example    │
-│                              (Technical Details hidden behind expandable accordion)     │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼ (Click "Preview Fix")
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ LEVEL 4: RESOLUTION (STG Sandbox Dry-Run & Promotion Modal)                            │
-│ "How do I fix it?" ──► Preview record changes → Run STG Dry-Run → Push to PROD          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼ (Execution Complete)
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ LEVEL 5: VALIDATION (Audit Logs & Re-Validation Proof)                                 │
-│ "Did the fix actually work?" ──► Re-validation passed (✓ 0 errors) + Immutable Audit Log│
-└────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: MIGRATION SETUP (Source & Target PostgreSQL Connections)                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: SOURCE DISCOVERY (Inspect Tables, Columns, PKs, FKs, Indexes & Metadata)                │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: TARGET SCHEMA DISCOVERY (Inspect Discovered Target Schema — No Frontend Editing)         │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: MAPPING WORKSPACE (Review Mappings, Upload JSON, Download Sample JSON, Edit Drafts)      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 5: VALIDATION (Readiness Check, Blocking Issue Resolution, Pre-Flight Verification)         │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 6: SEQUENTIAL EXECUTION (Ordered Table Pipeline: Completed ➔ Running ➔ Queued ➔ Failed)     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 7: MIGRATION DASHBOARD (Health Status, Table Reconciliation, Discrepancy Isolation)        │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 8: FINAL MIGRATION REPORT (Audit Summary, Object Results, Downloadable Report Artifact)     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Visual Aesthetic Guidelines
-- **Modern Enterprise Theme:** Inspired by Stripe, Linear, Datadog, and Snowflake. Light, calm, trustworthy aesthetic (`bg-surface`, `border-slate-200`, Slate body text, GM Blue accents).
-- **Typography:** Outfit (Display headers) and Inter (UI body & table text).
-- **Animations:** State-explaining transitions only (progress bar fills, drawer slides, validation completions). No distracting neon glows or pulsing cyberpunk effects.
+---
+
+## 3. Step-by-Step Functional Reference
+
+### Step 1: Migration Setup — Source & Target Connections
+- **Purpose:** Establish and test PostgreSQL source and target database connections.
+- **Key Functionality:**
+  - **Engine Focus:** Focused strictly on PostgreSQL for V0.
+  - **Source Connection Card:** Host, port (5432), database name, username, password, SSL toggle (`sslmode=require`), connection string.
+  - **Target Connection Card:** Host, port (5432), database name, username, password, SSL toggle (`sslmode=require`), connection string.
+  - **Integrated Action Buttons:** Integrated test/connect buttons (`Test & Connect Source`, `Test & Connect Target`) with clear loading states and status feedback.
+  - **Removed Obsolete Concepts:** Unnecessary "Migration Intent" and "Migration Constraints" sections removed from V0 setup flow.
+
+### Step 2: Source Database Discovery
+- **Purpose:** Automatically inspect and analyze the connected PostgreSQL source database structure.
+- **Key Functionality:**
+  - **Operational Discovery State:** Visual progress communicating current inspection stage (Inspecting schema, cataloging tables, discovering primary keys, mapping foreign keys, indexing).
+  - **Schema Explorer:** Discovered table list showing table name, schema, estimated row count, column count, PK, FK count, and index count.
+  - **Compact Metrics Summary:** Total tables discovered, total schemas, total columns, total foreign key references.
+  - **Inclusion Toggles & Search:** Filter discovered tables, toggle table migration inclusion.
+
+### Step 3: Target Schema Discovery & Review
+- **Purpose:** Discover and inspect the target PostgreSQL database schema to prepare for mapping.
+- **Key Functionality:**
+  - **Automated Target Discovery:** Discovers existing target schema directly from target PostgreSQL connection.
+  - **No Frontend Schema Editing:** Unsupported manual schema creation controls ("Create target table", "Add target column", "Edit target schema DDL") have been completely removed.
+  - **Schema Inspection View:** Displays discovered target tables, column data types, nullability, PK/FK constraints, and unique indexes for mapping verification.
+
+### Step 4: Mapping Workspace & JSON Integration
+- **Purpose:** Define and review source-to-target table and column mappings.
+- **Key Functionality:**
+  - **JSON Mapping Upload:** Primary action allowing users to upload a mapping JSON file (`sample-mapping.json`).
+  - **Sample JSON Download:** Working download action providing a standard sample mapping JSON file.
+  - **Removed Obsolete Concept:** Strategy selector ("Preserve Source Structure", "Optimize Target Structure", "Custom") removed in favor of direct JSON-driven mapping review.
+  - **Mapping Summary & Review:** Shows Total Mappings, Valid Mappings, Invalid Mappings, Unmapped Source Objects, and Unmatched Target Objects.
+  - **Field Mapping Editor:** Allows inline adjustment of target column assignments, data type casting rules, and string normalization rules.
+  - **Draft Persistence:** Mappings are saved automatically to draft state as the user works.
+
+### Step 5: Pre-Flight Migration Validation
+- **Purpose:** Answer the fundamental question: *"Is this migration ready to run?"*
+- **Key Functionality:**
+  - **Readiness Score Header:** Prominent migration readiness indicator (0–100%).
+  - **Structured Issue List:** Categorizes issues into Critical (Blocking) and Warning (Non-blocking).
+  - **Issue Detail Cards:** Plain-English explanation of affected source/target objects, impact, and required remediation action.
+  - **One-Click Remediation (Simulated):** Allows resolving mock critical issues to achieve 100% readiness.
+
+### Step 6: Sequential Migration Execution
+- **Purpose:** Execute table-by-table migration sequentially with live log streaming.
+- **Key Functionality:**
+  - **Sequential Pipeline Model:** Enforces strict sequential table execution (`Completed` ➔ `Running` ➔ `Queued` ➔ `Failed`). No parallel worker lanes or race conditions.
+  - **Ordered Table Pipeline Table:**
+    | Order | Table Name | Status | Current Operation | Progress |
+    |---|---|---|---|---|
+    | 1 | legacy_makes | Completed | Verified 5 rows | 100% |
+    | 2 | legacy_models | Completed | Verified 17 rows | 100% |
+    | 3 | legacy_vehicles | Running | Ingesting & Splitting | 68.4% |
+    | 4 | pcs_procedures | Queued | Waiting on vehicles FK | 0% |
+  - **Execution Controls:** Pause, Resume, Stop, and Retry actions.
+  - **Scannable Log Console:** Filterable execution logs (All, Success, Warning, Error) with timestamps.
+
+### Step 7: Migration Dashboard & Reconciliation
+- **Purpose:** Monitor overall migration health and table reconciliation metrics.
+- **Key Functionality:**
+  - **Executive Migration Health Header:** Overall health score (e.g. 94.8%), total migrated tables vs total tables.
+  - **Compact Key Metrics:** Total Tables, AS-IS Source Rows (2.78M), TO-BE Expected Rows (2.07M), Failed/Blocked Rows (193K).
+  - **Table Directory & Filters:** Target DB scope filter (`prod_db_01` vs `prod_db_02`), search bar, status dropdown.
+  - **Mapping Studio & Table Details Drilldowns:** Direct navigation into Mapping view and Table Profile details.
+
+### Step 8: Final Migration Report & Audit Artifact
+- **Purpose:** Provide an audit-friendly executive report summarizing final migration outcomes.
+- **Key Functionality:**
+  - **Executive Summary Box:** Run ID, Migration status (`Completed with Warnings`), Source & Target DB info, execution duration.
+  - **Metrics Overview:** Migrated tables count, total source records, target reconciled records, failed record count.
+  - **Object-Level Results Table:** Table-by-table breakdown of source rows, target expected rows, migrated count, failed count, reconciliation %, and status.
+  - **Working Download Button:** Triggers download of `sample-migration-report.json`.
 
 ---
 
-## 3. Data & Migration Architecture
+## 4. User Actions & Expected System Outcomes
 
-Nexus Migrate governs data across three distinct environments:
-
-```
-┌──────────────────────────┐      ┌──────────────────────────┐      ┌──────────────────────────┐
-│   SOURCE DATABASE        │      │    STAGING SANDBOX       │      │   PRODUCTION TARGET      │
-│ (Legacy Oracle / DB2)    │ ───► │ (PostgreSQL Validation)  │ ───► │ (Snowflake Cloud DB)     │
-│ Ingested Legacy Metadata │      │ Dry-Run & Remediation    │      │ Promoted & Audited Data  │
-└──────────────────────────┘      └──────────────────────────┘      └──────────────────────────┘
-```
-
-1. **Source Database (Legacy Production):** Legacy on-premise Oracle / IBM DB2 databases containing raw, un-normalized historical manufacturing and vehicle authoring data.
-2. **Staging Sandbox (STG):** PostgreSQL 16 sandbox environment where ETL transformation rules are executed, data quality constraints are validated, and pre-flight dry runs are performed.
-3. **Production Target (PROD):** Target Snowflake Data Cloud production database where approved, sanitized data is promoted and published.
-
----
-
-## 4. Velocity Motors Automotive Domain Story
-
-To make demonstrations reproducible and realistic, the mock dataset models **Velocity Motors**, a global automotive manufacturer migrating production systems:
-
-- **Pune Assembly Plant (India):** Houses legacy engine assembly databases (`LEGACY_VHCLS`, `LEGACY_MDLS`).
-- **Munich R&D Facility (Germany):** Houses European engineering control catalogs (`LEGACY_PCS_HDR`, `LEGACY_PCS_PROC`).
-- **11 Core Database Tables:**
-  - **Reference Domain:** `makes`, `models`, `vehicles` (Master vehicle authoring catalog).
-  - **PCS Domain (Production Configuration Systems):** `pcs`, `pcs_systems`, `pcs_subsystems`, `pcs_procedures` (Terminal assembly procedures; 150,610 rows).
-  - **MCS Domain (Manufacturing Control Systems):** `mcs`, `mcs_systems`, `mcs_subsystems`, `mcs_procedures` (Plant automation procedure drafts; 521,878 rows).
-- **Seeded Data Quality Scenarios:**
-  - `ERR-2967` (Missing Parent Reference): Vehicle ID `GMV-2967` is present in child procedures but missing from reference table. Blocks 150,610 child procedure rows ($2,063\times$ cascade multiplier). `FIXABLE`.
-  - `ERR-1713` (Duplicate Regional Keys): Ingested duplicate regional key entries in staging. `FIXABLE`.
-  - `ERR-1750` (Orphan Reference Row): Excluded make code `"GEN"` with 0 child dependents. `DELETE_CANDIDATE`.
-  - `ERR-3091` (Unsafe Deletion Block): 521,878 MCS procedure drafts referencing parent node. `BLOCKED`.
+| Journey Step | User Action | Expected System Outcome |
+|---|---|---|
+| Step 1 (Setup) | Clicks "Test & Connect Source" | Validates PostgreSQL connection string, displays connection success toast, updates source card to `Connected`. |
+| Step 1 (Setup) | Clicks "Test & Connect Target" | Validates PostgreSQL target connection string, displays target connection success toast. |
+| Step 2 (Discovery) | Clicks "Start Source Discovery" | Triggers operational discovery state, displays table inspection progress, renders discovered source schema. |
+| Step 3 (Target Review) | Inspects discovered target tables | Renders target PostgreSQL tables, columns, PKs, FKs for review without allowing schema DDL mutation. |
+| Step 4 (Mapping) | Uploads mapping JSON | Validates JSON format, populates source-to-target field mapping grid, updates mapping counts. |
+| Step 4 (Mapping) | Clicks "Download Sample JSON" | Triggers browser file download of `sample-mapping.json`. |
+| Step 5 (Validation) | Clicks "Run Pre-Flight Check" | Evaluates schema compatibility, FK relationships, data types, and updates readiness score. |
+| Step 6 (Execution) | Clicks "Start Migration" | Launches sequential pipeline execution; updates order table state from `Queued` to `Running` to `Completed`. |
+| Step 7 (Dashboard) | Selects Target DB scope filter | Filters table directory to display only tables present in `prod_db_01` or `prod_db_02`. |
+| Step 8 (Report) | Clicks "Download Final Report" | Downloads structured migration summary JSON (`sample-migration-report.json`). |
 
 ---
 
-## 5. Complete Screen-by-Screen Functional Reference
+## 5. Error & Failure State Behavior
 
-### Screen 1: Executive Dashboard (Level 1 Overview)
-- **Path / Route:** `/dashboard` (File: `src/pages/Dashboard.tsx`)
-- **Purpose:** Gives executive stakeholders and migration leads a calm, 30-second summary of overall migration health.
-- **Key UI Elements:**
-  - **Migration Health Banner:** Displays `Migration Health: 94.8% (Healthy)`.
-  - **1-Line Progress Bar:** Visualizes `92% Complete (221 / 245 tables migrated)` with color segments for Migrated (`221`), In Progress (`18`), and Require Attention (`6`).
-  - **4 Primary Metric Cards:** Tables (`221 / 245`), Total Records (`18.4M`), Successful Records (`18.1M`), Failed/Blocked (`42.3K`).
-  - **Actionable "Needs Attention" Area:** Displays prioritized items requiring human attention:
-    - ⚠ **Vehicles Catalog Reference:** `42,381 records affected` | *Engine mapping mismatch* $\rightarrow$ `[Investigate]` button
-    - ⚠ **Warranty Claims Assembly:** `1,284 records affected` | *Datatype mismatch* $\rightarrow$ `[Investigate]` button
-    - ⚠ **MCS Procedures Drafts:** `521,878 records affected` | *Foreign key deletion block* $\rightarrow$ `[Investigate]` button
-    - ✓ **Customers Catalog:** `Validation completed` | `100% reconciled`
-  - **Recent Activity Timeline:** Non-distracting timeline of recent migration events (`Customer migration completed 2m ago`).
-  - **Primary Action Button:** Prominent **`[Review 6 Issues]`** button navigating directly to Error Centre.
+1. **Connection Failure (Step 1):** Display explicit error message (e.g. `Connection refused at aws-east-pg01.internal:5432`). Prevent proceeding to Step 2 until connection succeeds.
+2. **Schema Incompatibility / Discrepancy (Step 3/4):** Highlight unmapped source columns or unmatched target columns in red/amber status badges. Mark mapping status as `Warning` or `Invalid`.
+3. **Blocking Validation Issue (Step 5):** Set readiness score < 100% and flag blocking issue as `Critical`. Disable execution start button until critical issues are resolved or bypassed.
+4. **Execution Table Failure (Step 6):** Pause active sequential pipeline, flag failed table order item as `Failed`, write detailed error log to execution console, and present `Retry Failed Table` action.
 
 ---
 
-### Screen 2: Migration Health & Reconciliation
-- **Path / Route:** `/health` (File: `src/pages/MigrationHealth.tsx`)
-- **Purpose:** Level 2 Investigation view providing environment-aware reconciliation statistics across all 11 database tables.
-- **Key UI Elements & Functionality:**
-  - **Global Environment Switcher:** Toggle between `Source DB`, `STG`, and `PROD` to view environment-specific row counts.
-  - **Live Search Bar & Filters:** Filter tables by name, domain category (`Reference`, `PCS`, `MCS`), status (`Healthy`, `Warning`, `Critical`), or check `Only show tables with discrepancies`.
-  - **Sortable Columns:** Click column headers to sort by Table Name, Discrepancy Count, or Migration Completeness %.
-  - **Table Reconciliation Grid:** Displays Table Name, Domain Category, Source Rows, STG Rows, PROD Rows, Record Difference Count, Migration %, and Status Badge.
-  - **Interactive Drilldown:** Clicking any table row sets `selectedEntityId` and navigates to Entity Explorer.
+## 6. Draft & State Persistence Behavior
+
+- **Autosave Engine:** All user choices (connection credentials, discovered schema inclusions, mapping edits, validation resolution states) autosave to Zustand global state store.
+- **TopBar Status Indicator:** TopBar displays a green `"Draft saved"` badge whenever state updates occur.
+- **Step Navigation Safety:** Users can move back and forth between completed steps without losing entered connection strings or uploaded mapping JSON definitions.
 
 ---
 
-### Screen 3: Entity Explorer & Data Grid
-- **Path / Route:** `/entity` (File: `src/pages/EntityExplorer.tsx`)
-- **Purpose:** Deep inspection of individual database entities, column schemas, mapping rules, data lineage, active errors, author revisions, and row-level data grids.
-- **Key UI Elements & Functionality:**
-  - **Entity Search Autocomplete:** Top search bar allowing instant switching between database tables.
-  - **7 Interactive Entity Tabs:**
-    1. **Overview:** Total row counts, storage size, column count, primary key, foreign key count, and sync status.
-    2. **Columns & Types:** Complete column schema table displaying Column Name, Data Type, Primary Key tags (`PK`), and Foreign Key target links (`FK → vehicles.vehicle_id`).
-    3. **Data Grid Explorer (Full-Page Data Grid):** Interactive staging record grid featuring **pinned primary key columns** (`📌 Pinned PK`), row search filtering, LHS vs RHS record comparison (`PUNE-X7-2026` vs `X7-2026`), reconciliation status badges (`DISCREPANCY`, `DUPLICATE`, `ORPHAN`, `RECONCILED`), and direct `Inspect Fix` links.
-    4. **Source Mapping (Visual Column Mapping Studio Canvas):** Field-to-field ETL transformation connector cards (`Source Column (LHS)` $\rightarrow$ `ETL Transformation Node` $\rightarrow$ `Target Column (RHS)`), rule confidence ratings (`100% Rule Confidence`), datatype mapping pills, and live before/after sample data preview box (`PUNE-X7-2026` $\rightarrow$ `X7-2026`).
-    5. **Lineage & Keys:** Upstream parent table references and downstream child table dependencies.
-    6. **DQ Errors:** Table displaying active data quality anomalies filtered for this entity.
-    7. **Author Audits:** Table displaying manual author modifications and change log timestamps.
+## 7. Current V0 Limitations vs Future Backend Capabilities
 
----
-
-### Screen 4: Error Centre Workbench & Diagnostic Drawer
-- **Path / Route:** `/errors` (File: `src/pages/ErrorCentre.tsx`)
-- **Purpose:** Level 3 Diagnosis and Level 4 Resolution workbench for investigating and fixing database migration errors.
-- **Key UI Elements & Functionality:**
-  - **Multi-Select Error Table:** Checkboxes to select individual or multiple errors, filter pills (`ALL`, `FIXABLE`, `DELETE_CANDIDATE`, `BLOCKED`), and floating batch action bar (`Preview Selected Fixes`).
-  - **Level 3 Plain-English Diagnostic Drawer:**
-    - **ISSUE DIAGNOSIS:** Severity badge (`HIGH SEVERITY`) and title (`PCS PROCEDURES Validation Failure`).
-    - **WHAT HAPPENED?:** Plain-English summary (`"150,610 records failed staging database validation checks."`).
-    - **WHY DID IT HAPPEN?:** Plain-English root cause explanation.
-    - **EXAMPLE VALUE MISMATCH BOX:** Side-by-side comparison of Legacy Source Value (`PUNE-X7-2026`) vs Target Required Format (`X7-2026`).
-    - **RECOMMENDED FIX:** Actionable guidance (`"Remove the legacy plant prefix ('PUNE-') and normalize the engine ID reference key."`).
-    - **EXPANDABLE TECHNICAL ACCORDION:** `▶ Show Technical Details` button hiding raw diagnostic evidence, downstream dependency tree lists, and legacy DB query tables.
-  - **4-Method Remediation Value Update Engine:**
-    1. `DIRECT_OVERRIDE`: Manual reference key typing (e.g. `vehicle_id` = `"GMV-2967"`).
-    2. `PATTERN_TRANSFORM`: String pattern replace rule (`REPLACE(vehicle_code, "VHC-", "GMV-")`).
-    3. `LEGACY_IMPORT`: Clicks `🔍 Compare with Legacy DB` to query `LEGACY_VHCLS` and auto-imports legacy reference value.
-    4. `SQL_EXPRESSION`: Evaluates custom SQL normalization expression (`COALESCE(target_ref, legacy_src_ref)`).
-  - **STG Sandbox Dry-Run Simulator Modal (`ImpactPreview.tsx`):** Asynchronous `/remediation/preview` dry-run pre-flight check outputting risk level (`SAFE TO EXECUTE`, `NEEDS REVIEW`, `HIGH RISK`), total downstream records affected (`150,610`), and blocking reasons.
-  - **Production Promotion Confirmation Modal (`ConfirmModal.tsx`):** Danger confirmation dialog requiring typed `"PROD"` environment verification, operator change request comment, and push scope selection (`BATCH` vs `SINGLE` push).
-
----
-
-### Screen 5: Cascade Impact Analysis & Domino Engine
-- **Path / Route:** `/cascade` (File: `src/pages/CascadeAnalysis.tsx`)
-- **Purpose:** Interactive graph visualization of downstream referential blast radius and domino effect propagation.
-- **Key UI Elements & Functionality:**
-  - **Multi-Tier Domino Effect Tree:** Interactive ReactFlow graph mapping 4 distinct tier levels:
-    $$\text{Tier 0: Root Vehicle Anomaly} \longrightarrow \text{Tier 1: PCS Headers} \longrightarrow \text{Tier 2: Systems} \longrightarrow \text{Tier 3: Subsystems} \longrightarrow \text{Tier 4: Leaf Procedures (150,610 rows)}$$
-  - **Amplification Multiplier Dial:** Computes total child record impact vs root error count ($2,063\times$ growth factor).
-  - **Interactive Impact Inspector:** Clicking any node in the graph displays its schema section, relationship type (`1-to-Many Cascade`), affected row count, percentage of total impact (95.2%), and constraint severity badge.
-  - **High-Res Diagram Export:** **"📷 Export Domino Diagram (SVG/PNG)"** button downloading clean vector graphics of the cascade graph.
-
----
-
-### Screen 6: Schema Explorer & ER Map
-- **Path / Route:** `/schema` (File: `src/pages/SchemaExplorer.tsx`)
-- **Purpose:** Technical schema inspection, interactive ER diagram canvas, table dictionary, and schema export engine.
-- **Key UI Elements & Functionality:**
-  - **Interactive ER Canvas:** ReactFlow visual node graph of all 11 database tables displaying column lists, primary key badges (`PK`), foreign key connectors (`FK`), and node highlight colors on selection.
-  - **Table Search & Category Filters:** Search bar (`Search table, column...`) and domain category filter pills (`ALL`, `Reference`, `PCS`, `MCS`).
-  - **7 Table Detail Tabs:** `Overview`, `Schema`, `Data`, `Relationships`, `Mapping`, `Validation`, `History`.
-  - **📷 Export High-Res ER Diagram (SVG/PNG):** Generates and downloads scalable vector graphics capturing table nodes, column lists, connectors, and badges.
-  - **📄 Export DDL (SQL):** Generates and downloads SQL `CREATE TABLE` and `ALTER TABLE ADD CONSTRAINT` DDL scripts matching target database engines.
-
----
-
-### Screen 7: Authoring Changes Audit
-- **Path / Route:** `/authoring` (File: `src/pages/AuthorChanges.tsx`)
-- **Purpose:** Field-level audit trail comparing human author modifications against automated migration values.
-- **Key UI Elements & Functionality:**
-  - **3-Way Value Comparison Grid:** Original Legacy Value $\rightarrow$ Migrated ETL Value $\rightarrow$ Current Author Modified Value.
-  - **Approval Status Workflows:** Status badges for `Pending Review`, `Approved`, and `Published`.
-  - **Author Activity Cards:** Shows author name, timestamp, affected record key, and change rationale.
-
----
-
-### Screen 8: Page Drilldown Directory
-- **Path / Route:** `/drilldown` (File: `src/pages/PageDrilldown.tsx`)
-- **Purpose:** Central routing sitemap navigation matrix providing direct links into any database table, error anomaly, or system module.
-
----
-
-### Screen 9: Operational Audit Logs & Execution Replay
-- **Path / Route:** `/audit` (File: `src/pages/AuditHistory.tsx`)
-- **Purpose:** Level 5 Validation workspace containing immutable database transaction logs and an interactive execution replay timeline player.
-- **Key UI Elements & Functionality:**
-  - **Interactive Migration Execution Replay Player:**
-    - **Play / Pause Button:** `▶ Play Replay` / `⏸ Pause Replay`.
-    - **Speed Selector:** Toggle playback speed (`1x`, `2x`, `5x`).
-    - **Progress Scrubber:** Visual progress bar (`0%` $\rightarrow$ `100%`).
-    - **Step Navigation:** `Prev` and `Next` step buttons.
-    - **Live Execution Log Box:** Displays step title, timestamp, and detailed description (`Step 1 of 4: Ingestion & STG Validation` $\rightarrow$ `Step 2: DQ Anomaly Detection` $\rightarrow$ `Step 3: Remediation Dry Run` $\rightarrow$ `Step 4: PROD Commit`).
-  - **Immutable Transaction Table:** Operation ID (`OP-001`, `OP-002`), Timestamp, Target Schema, Operation Type, Mutated Record Count, Operator Name (`A. Howard`), and Environment (`PROD`).
-  - **Snapshot Inspection Drawer:** Clicking any log row opens a drawer displaying full before/after JSON state snapshots.
-
----
-
-## 6. Detailed End-to-End Operational Workflows
-
-### Workflow 1: Executive Overview $\rightarrow$ Anomaly Selection $\rightarrow$ Investigation
-1. **User Opens Dashboard (`/dashboard`):** User observes **Migration Health: 94.8% (Healthy)** and progress bar (`92% Complete`).
-2. **Review Needs Attention Area:** User sees `Vehicles Catalog Reference` (`42,381 records affected` | *Engine mapping mismatch*).
-3. **Click `[Investigate]`:** User is navigated to Error Centre (`/errors`), setting `selectedErrorId = "ERR-2967"` and opening the diagnostic drawer.
-
----
-
-### Workflow 2: Plain-English Error Diagnosis $\rightarrow$ Technical Accordion $\rightarrow$ 4-Method Value Remediation
-1. **Plain-English Review:** User reads:
-   - **WHAT HAPPENED?:** `"150,610 records failed staging database validation checks."`
-   - **WHY DID IT HAPPEN?:** `"Vehicle record 2967 failed to pass staging data-validation rules..."`
-   - **EXAMPLE VALUE MISMATCH:** Legacy `PUNE-X7-2026` vs Target `X7-2026`.
-   - **RECOMMENDED FIX:** `"Remove the legacy plant prefix ('PUNE-') and normalize the engine ID reference key."`
-2. **Select Remediation Update Method:** User chooses an update method in the drawer:
-   - `DIRECT_OVERRIDE`: Enters `"GMV-2967"` manually.
-   - `PATTERN_TRANSFORM`: Selects `REPLACE(vehicle_code, "VHC-", "GMV-")`.
-   - `LEGACY_IMPORT`: Clicks `🔍 Compare with Legacy DB` to query `LEGACY_VHCLS` and imports the legacy value.
-   - `SQL_EXPRESSION`: Enters `COALESCE(target_ref, legacy_src_ref)`.
-3. **Save Override:** User clicks `Apply Fix`. Success indicator (`✓ Value override saved`) appears.
-4. **Expand Technical Details (Optional):** User clicks `▶ Show Technical Details` to reveal downstream dependency lists and raw SQL queries.
-
----
-
-### Workflow 3: STG Sandbox Dry Run $\rightarrow$ Typed PROD Promotion $\rightarrow$ Audit Validation
-1. **Trigger Pre-Flight Check:** User clicks `Preview and Run Fix`.
-2. **Review Dry-Run Modal (`ImpactPreview.tsx`):** Displays Risk Level (`SAFE TO EXECUTE`), Affected Records (`150,610`), and Table Breakdown (`vehicles`: 1 row, `pcs_procedures`: 150,610 rows).
-3. **Execute STG Sandbox:** User clicks `Proceed with STG Dry-Run`. Console logs stream progress (`STG_PENDING` $\rightarrow$ `STG_SUCCESS`).
-4. **Trigger PROD Promotion:** User clicks `Batch Push to PROD (Recommended)`.
-5. **Typed Verification Modal (`ConfirmModal.tsx`):** User types `"PROD"`, enters change request reason, selects `BATCH` push, and clicks `Confirm & Execute`.
-6. **PROD Commit & Audit Log:** Status updates to `PROD_SUCCESS`, errors count decreases, and a new audit record (`OP-003`) is logged in Audit History (`/audit`).
-
----
-
-### Workflow 4: ER Schema Exploration $\rightarrow$ Table Search $\rightarrow$ 7 Detail Tabs $\rightarrow$ High-Res SVG & SQL DDL Export
-1. **Open Schema Explorer (`/schema`):** User views 11-table ER diagram canvas.
-2. **Search & Filter:** User types `"vehicle"` in search input or clicks `Reference` category pill.
-3. **Inspect Detail Tabs:** User switches view mode to `Mapping details` and navigates across `Overview`, `Schema`, `Data`, `Relationships`, `Mapping`, `Validation`, and `History`.
-4. **Export High-Res Diagram:** User clicks `📷 Export High-Res ER Diagram (SVG/PNG)` to download scalable vector SVG graphics.
-5. **Export DDL Script:** User clicks `📄 Export DDL (SQL)` to download ready-to-execute `CREATE TABLE` / `ALTER TABLE` SQL DDL files.
-
----
-
-### Workflow 5: Multi-Tier Domino Blast Radius Analysis
-1. **Open Cascade View (`/cascade`):** User inspects multi-tier domino tree.
-2. **Trace Domino Tiers:** User follows impact flow: $\text{Root Vehicle Anomaly} \rightarrow \text{PCS Headers} \rightarrow \text{Systems} \rightarrow \text{Subsystems} \rightarrow \text{Leaf Procedures}$.
-3. **Inspect Blast Radius:** User clicks `pcs_systems` node. Side-by-side Impact Inspector displays row count (`1,298`), percentage impact (`95.2%`), and severity.
-4. **Export Domino Diagram:** User clicks `📷 Export Domino Diagram (SVG/PNG)` to download vector graphics.
-
----
-
-### Workflow 6: Interactive Migration Execution Replay
-1. **Open Audit History (`/audit`):** User views the Interactive Migration Execution Replay card.
-2. **Play Execution:** User clicks `▶ Play Replay` or toggles speed (`1x`, `2x`, `5x`).
-3. **Scrub Timeline:** User uses `Prev` / `Next` buttons or scrubber bar to step through `Step 1 of 4: Ingestion & STG Validation` $\rightarrow$ `Step 2: Anomaly Detection` $\rightarrow$ `Step 3: Remediation Dry Run` $\rightarrow$ `Step 4: PROD Commit`.
-
----
-
-## 7. State Architecture & Mock Service Boundary
-
-### Global State Store (`src/state/useGlobalStore.ts`)
-Managed by **Zustand**. Stores global selection IDs and navigation context:
-```typescript
-interface GlobalState {
-  environment: Environment; // 'Source' | 'STG' | 'PROD'
-  activePage: PageId;       // 'dashboard' | 'health' | 'entity' | 'errors' | 'cascade' | 'schema' | 'authoring' | 'drilldown' | 'audit'
-  selectedEntityId: string | null;
-  selectedErrorId: string | null;
-  selectedVehicleId: string | null;
-  
-  // Actions
-  setEnvironment: (env: Environment) => void;
-  setActivePage: (page: PageId) => void;
-  setSelectedEntityId: (id: string | null) => void;
-  setSelectedErrorId: (id: string | null) => void;
-  setSelectedVehicleId: (id: string | null) => void;
-}
-```
-
-### Mock API Service Layer (`src/data/mockApi.ts`)
-All data fetching and mutations pass through `mockApi.ts` promises:
-- `getEntities(env)`: Returns summary metrics for all 11 tables.
-- `getErrors(filters)`: Returns data quality anomalies.
-- `getSchema(tableId)`: Returns column schema, PKs, FKs, and ETL mapping rules.
-- `getLineage(fieldId)`: Returns upstream and downstream dependency trees.
-- `previewRemediation(errorIds, action)`: Runs STG pre-flight dry-run check.
-- `executeRemediation(jobId, pushType)`: Commits promotion to PROD.
-- `saveOverride(errorId, overrideValue, method)`: Saves remediation value override.
-- `getOperationAudits()`: Returns immutable operational audit logs.
-
-### Connecting to a Real Backend API
-To transition from the mock simulator to a live backend, **zero UI code changes are required**. Simply edit `src/data/mockApi.ts` and replace the promise returns with `axios` or `fetch()` HTTP REST calls pointing to your backend endpoints (`http://localhost:8080/api/v1`).
-
----
-
-## 8. Developer Onboarding & Customization Guide
-
-### Running Locally
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Start local development server
-npm run dev
-
-# 3. Build production bundle and verify TypeScript types
-npm run build
-```
-
-### Customizing Seed Data & Table Names
-To change table names, column names, or mock data values to match your actual database migration scripts before connecting a real backend, edit:
-
-📄 **[`src/data/database/seedData.ts`](file:///c:/Users/hp/Desktop/dummy_migration_dashboard/src/data/database/seedData.ts)**
-
-Example:
-```typescript
-// Edit seedData.ts to rename tables or update row counts
-{
-  id: 'vehicle_master',                // <- Custom table ID
-  name: 'Vehicle Master Reference',     // <- Custom display name
-  category: 'Reference',
-  sourceCount: 50000,                   // <- Custom row count
-  stgCount: 49800,
-  prodCount: 49800
-}
-```
-
-### Key Files Map for New Developers
-- **Dashboard:** `src/pages/Dashboard.tsx`
-- **Migration Health:** `src/pages/MigrationHealth.tsx`
-- **Entity Explorer & Data Grid:** `src/pages/EntityExplorer.tsx`
-- **Error Centre & Remediation:** `src/pages/ErrorCentre.tsx`
-- **Cascade Domino Graph:** `src/pages/CascadeAnalysis.tsx`
-- **Schema Explorer & ER Map:** `src/pages/SchemaExplorer.tsx`
-- **Audit Logs & Execution Replay:** `src/pages/AuditHistory.tsx`
-- **API Service Layer:** `src/data/mockApi.ts`
-- **Database Seed Models:** `src/data/database/seedData.ts`
-- **Global State Store:** `src/state/useGlobalStore.ts`
-- **Type Definitions:** `src/types/models.ts`
+| Feature Area | Current V0 Frontend Simulator | Future Backend Requirement |
+|---|---|---|
+| Database Engine Support | PostgreSQL | Extensible multi-engine driver layer (PostgreSQL, MySQL, Oracle) |
+| Connection Persistence | In-memory Zustand store | Encrypted secret storage / HashiCorp Vault integration |
+| Schema Discovery | Mocked PostgreSQL catalog inspection | Real SQL DDL query driver (`information_schema.tables`) |
+| Mapping Upload | Client-side JSON file parse | Backend mapping schema validator REST API |
+| Execution Engine | Simulated sequential progression timer | Asynchronous worker queue with SSE/WebSocket progress stream |
+| Report Generation | Static JSON sample file download | Dynamic PDF/CSV report generation engine |

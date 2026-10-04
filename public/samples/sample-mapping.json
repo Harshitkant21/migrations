@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json.schema.nexusmigrate.io/v1/mapping.json",
+  "migrationId": "mig_2026_0928_postgresql",
+  "version": "1.0",
+  "title": "Velocity Motors PostgreSQL Migration Map",
+  "sourceDatabase": {
+    "engine": "PostgreSQL",
+    "host": "aws-east-pg01.internal",
+    "port": 5432,
+    "database": "production_core_db",
+    "schema": "public"
+  },
+  "targetDatabase": {
+    "engine": "PostgreSQL",
+    "host": "pg-cloud-aurora.internal",
+    "port": 5432,
+    "database": "production_target_db",
+    "schema": "public"
+  },
+  "mappings": [
+    {
+      "id": "map-vehicles",
+      "mappingType": "SPLIT",
+      "sourceDatabases": ["legacy_db_01"],
+      "sourceTables": ["LEGACY_VHCLS"],
+      "targetDatabases": ["prod_db_01"],
+      "targetTables": ["vehicles", "vehicle_specifications"],
+      "title": "Vehicle Master Table Split",
+      "description": "Splits legacy monolithic vehicle table into core vehicle metadata and regional specifications.",
+      "status": "Warning",
+      "notes": "ERR-2967 missing parent reference anomaly affects 42,381 target rows during staging split.",
+      "columnMappings": [
+        {
+          "id": "cm-1",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_VHCLS",
+          "sourceColumn": "VHC_ID",
+          "sourceDataType": "VARCHAR(50)",
+          "transformationType": "NORMALIZE",
+          "transformationRule": "Prefix with 'GMV-' and strip legacy plant prefix",
+          "targetDb": "prod_db_01",
+          "targetTable": "vehicles",
+          "targetColumn": "vehicle_id",
+          "targetDataType": "VARCHAR(20)",
+          "sampleBefore": "PUNE-X7-2026",
+          "sampleAfter": "GMV-2967",
+          "status": "Mapped"
+        },
+        {
+          "id": "cm-2",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_VHCLS",
+          "sourceColumn": "MDL_CD",
+          "sourceDataType": "VARCHAR(20)",
+          "transformationType": "LOOKUP",
+          "transformationRule": "Foreign key lookup against models reference map",
+          "targetDb": "prod_db_01",
+          "targetTable": "vehicles",
+          "targetColumn": "model_id",
+          "targetDataType": "VARCHAR(10)",
+          "sampleBefore": "MDL-556",
+          "sampleAfter": "MDL-556",
+          "status": "Mapped"
+        },
+        {
+          "id": "cm-3",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_VHCLS",
+          "sourceColumn": "YR",
+          "sourceDataType": "VARCHAR(4)",
+          "transformationType": "CAST",
+          "transformationRule": "Cast string year to Integer",
+          "targetDb": "prod_db_01",
+          "targetTable": "vehicles",
+          "targetColumn": "model_year",
+          "targetDataType": "INT",
+          "sampleBefore": "\"2026\"",
+          "sampleAfter": "2026",
+          "status": "Mapped"
+        }
+      ]
+    },
+    {
+      "id": "map-pcs-merge",
+      "mappingType": "MERGE",
+      "sourceDatabases": ["legacy_db_01", "legacy_db_01"],
+      "sourceTables": ["LEGACY_PCS_HDR", "LEGACY_PCS_SYS"],
+      "targetDatabases": ["prod_db_02"],
+      "targetTables": ["pcs_systems_master"],
+      "title": "PCS Header + System Table Merge",
+      "description": "Merges legacy header attributes and system codes into a unified master system table.",
+      "status": "Healthy",
+      "notes": "2 source tables combined using composite merge key.",
+      "columnMappings": [
+        {
+          "id": "cm-5",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_PCS_HDR",
+          "sourceColumn": "PCS_CD",
+          "sourceDataType": "VARCHAR(20)",
+          "transformationType": "MERGE_KEY",
+          "transformationRule": "Primary merge join key",
+          "targetDb": "prod_db_02",
+          "targetTable": "pcs_systems_master",
+          "targetColumn": "pcs_id",
+          "targetDataType": "VARCHAR(10)",
+          "sampleBefore": "PCS-880",
+          "sampleAfter": "PCS-880",
+          "status": "Mapped"
+        }
+      ]
+    }
+  ]
+}

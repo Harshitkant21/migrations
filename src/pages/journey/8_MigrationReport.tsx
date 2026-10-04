@@ -23,12 +23,18 @@ import {
 export const MigrationReportStep: React.FC = () => {
   const { setActiveStep, addToast } = useGlobalStore();
 
-  const handleDownloadPdf = () => {
-    addToast('Generating PDF audit report — MIG-2026-0928-PROD.pdf downloaded', 'success');
+  const handleDownloadReport = () => {
+    const link = document.createElement('a');
+    link.href = '/samples/sample-migration-report.json';
+    link.download = 'sample-migration-report.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    addToast('Downloaded sample-migration-report.json audit artifact', 'success');
   };
 
   const handleExportJson = () => {
-    addToast('Audit manifest exported as JSON specification', 'info');
+    handleDownloadReport();
   };
 
   const handleShareReport = () => {
@@ -86,11 +92,11 @@ export const MigrationReportStep: React.FC = () => {
           <Button
             variant="primary"
             size="md"
-            onClick={handleDownloadPdf}
+            onClick={handleDownloadReport}
             className="font-mono text-xs shadow-xs bg-slate-900 hover:bg-slate-800 text-white"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Download PDF</span>
+            <span>Download Final Report</span>
           </Button>
         </div>
       </div>

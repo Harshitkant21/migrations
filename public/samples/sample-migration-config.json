@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json.schema.nexusmigrate.io/v1/migration-config.json",
+  "migrationId": "mig_2026_0928_multidb",
+  "version": "1.0",
+  "title": "Velocity Motors Multi-Database Migration Specification",
+  "description": "Single Source of Truth configuration JSON defining source connections, target connections, multi-DB table mappings, and execution pipeline sequence.",
+  "sourceDatabases": [
+    {
+      "id": "legacy_db_01",
+      "name": "legacy_db_01 (MySQL/PostgreSQL)",
+      "engine": "PostgreSQL",
+      "host": "aws-east-pg01.internal",
+      "port": 5432,
+      "database": "legacy_vehicle_db",
+      "username": "migrator_src01",
+      "ssl": true,
+      "tableCount": 8,
+      "description": "Legacy database storing vehicle reference catalogs & assembly headers."
+    },
+    {
+      "id": "legacy_db_02",
+      "name": "legacy_db_02 (PostgreSQL)",
+      "engine": "PostgreSQL",
+      "host": "aws-east-pg02.internal",
+      "port": 5432,
+      "database": "legacy_procedures_db",
+      "username": "migrator_src02",
+      "ssl": true,
+      "tableCount": 5,
+      "description": "Legacy PostgreSQL database storing control systems & procedure catalogs."
+    }
+  ],
+  "targetDatabases": [
+    {
+      "id": "prod_db_01",
+      "name": "prod_db_01 (PostgreSQL Target)",
+      "engine": "PostgreSQL",
+      "host": "pg-cloud-aurora01.internal",
+      "port": 5432,
+      "database": "production_vehicle_core",
+      "username": "migrator_tgt01",
+      "ssl": true,
+      "tableCount": 6,
+      "description": "Target production PostgreSQL database storing core vehicle reference catalogs."
+    },
+    {
+      "id": "prod_db_02",
+      "name": "prod_db_02 (PostgreSQL Target)",
+      "engine": "PostgreSQL",
+      "host": "pg-cloud-aurora02.internal",
+      "port": 5432,
+      "database": "production_procedures_core",
+      "username": "migrator_tgt02",
+      "ssl": true,
+      "tableCount": 8,
+      "description": "Target production PostgreSQL database storing assembly line procedures and logs."
+    }
+  ],
+  "mappings": [
+    {
+      "id": "map-vehicles",
+      "mappingType": "SPLIT",
+      "sourceDatabases": ["legacy_db_01"],
+      "sourceTables": ["LEGACY_VHCLS"],
+      "targetDatabases": ["prod_db_01"],
+      "targetTables": ["vehicles", "vehicle_specifications"],
+      "title": "Vehicle Master Table Split",
+      "description": "Splits legacy monolithic vehicle table into core vehicle metadata and regional specifications.",
+      "status": "Warning",
+      "notes": "ERR-2967 missing parent reference anomaly affects 42,381 target rows during staging split.",
+      "columnMappings": [
+        {
+          "id": "cm-1",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_VHCLS",
+          "sourceColumn": "VHC_ID",
+          "sourceDataType": "VARCHAR(50)",
+          "transformationType": "NORMALIZE",
+          "transformationRule": "Prefix with 'GMV-' and strip legacy plant prefix",
+          "targetDb": "prod_db_01",
+          "targetTable": "vehicles",
+          "targetColumn": "vehicle_id",
+          "targetDataType": "VARCHAR(20)",
+          "sampleBefore": "PUNE-X7-2026",
+          "sampleAfter": "GMV-2967",
+          "status": "Mapped"
+        },
+        {
+          "id": "cm-2",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_VHCLS",
+          "sourceColumn": "MDL_CD",
+          "sourceDataType": "VARCHAR(20)",
+          "transformationType": "LOOKUP",
+          "transformationRule": "Foreign key lookup against models reference map",
+          "targetDb": "prod_db_01",
+          "targetTable": "vehicles",
+          "targetColumn": "model_id",
+          "targetDataType": "VARCHAR(10)",
+          "sampleBefore": "MDL-556",
+          "sampleAfter": "MDL-556",
+          "status": "Mapped"
+        },
+        {
+          "id": "cm-3",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_VHCLS",
+          "sourceColumn": "YR",
+          "sourceDataType": "VARCHAR(4)",
+          "transformationType": "CAST",
+          "transformationRule": "Cast string year to Integer",
+          "targetDb": "prod_db_01",
+          "targetTable": "vehicles",
+          "targetColumn": "model_year",
+          "targetDataType": "INT",
+          "sampleBefore": "\"2026\"",
+          "sampleAfter": "2026",
+          "status": "Mapped"
+        }
+      ]
+    },
+    {
+      "id": "map-pcs-merge",
+      "mappingType": "MERGE",
+      "sourceDatabases": ["legacy_db_01", "legacy_db_01"],
+      "sourceTables": ["LEGACY_PCS_HDR", "LEGACY_PCS_SYS"],
+      "targetDatabases": ["prod_db_02"],
+      "targetTables": ["pcs_systems_master"],
+      "title": "PCS Header + System Table Merge",
+      "description": "Merges legacy header attributes and system codes into a unified master system table.",
+      "status": "Healthy",
+      "notes": "2 source tables combined using composite merge key.",
+      "columnMappings": [
+        {
+          "id": "cm-5",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_PCS_HDR",
+          "sourceColumn": "PCS_CD",
+          "sourceDataType": "VARCHAR(20)",
+          "transformationType": "MERGE_KEY",
+          "transformationRule": "Primary merge join key",
+          "targetDb": "prod_db_02",
+          "targetTable": "pcs_systems_master",
+          "targetColumn": "pcs_id",
+          "targetDataType": "VARCHAR(10)",
+          "sampleBefore": "PCS-880",
+          "sampleAfter": "PCS-880",
+          "status": "Mapped"
+        },
+        {
+          "id": "cm-6",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_PCS_SYS",
+          "sourceColumn": "SYS_CD",
+          "sourceDataType": "VARCHAR(20)",
+          "transformationType": "DIRECT",
+          "transformationRule": "Direct 1-to-1 mapping",
+          "targetDb": "prod_db_02",
+          "targetTable": "pcs_systems_master",
+          "targetColumn": "system_id",
+          "targetDataType": "VARCHAR(15)",
+          "sampleBefore": "SYS-102",
+          "sampleAfter": "SYS-102",
+          "status": "Mapped"
+        }
+      ]
+    },
+    {
+      "id": "map-pcs-procedures",
+      "mappingType": "SINGLE",
+      "sourceDatabases": ["legacy_db_01"],
+      "sourceTables": ["LEGACY_PCS_PROC"],
+      "targetDatabases": ["prod_db_02"],
+      "targetTables": ["pcs_procedures"],
+      "title": "PCS Procedures Ingestion",
+      "description": "Direct ingestion from legacy_db_01 to prod_db_02.",
+      "status": "Critical",
+      "notes": "ERR-2967 blocks 150,610 procedures from target promotion.",
+      "columnMappings": [
+        {
+          "id": "cm-8",
+          "sourceDb": "legacy_db_01",
+          "sourceTable": "LEGACY_PCS_PROC",
+          "sourceColumn": "PROC_CD",
+          "sourceDataType": "VARCHAR(30)",
+          "transformationType": "RENAME",
+          "transformationRule": "Rename column to procedure_id",
+          "targetDb": "prod_db_02",
+          "targetTable": "pcs_procedures",
+          "targetColumn": "procedure_id",
+          "targetDataType": "VARCHAR(20)",
+          "sampleBefore": "PROC_88092",
+          "sampleAfter": "PROC-88092",
+          "status": "Mapped"
+        }
+      ]
+    },
+    {
+      "id": "map-mcs-procedures",
+      "mappingType": "SINGLE",
+      "sourceDatabases": ["legacy_db_02"],
+      "sourceTables": ["LEGACY_MCS_PROC"],
+      "targetDatabases": ["prod_db_02"],
+      "targetTables": ["mcs_procedures"],
+      "title": "MCS Procedures Ingestion",
+      "description": "Direct ingestion from legacy_db_02 to prod_db_02.",
+      "status": "Critical",
+      "notes": "ERR-3091 blocks procedure promotion.",
+      "columnMappings": [
+        {
+          "id": "cm-11",
+          "sourceDb": "legacy_db_02",
+          "sourceTable": "LEGACY_MCS_PROC",
+          "sourceColumn": "MCS_PROC_CD",
+          "sourceDataType": "VARCHAR(30)",
+          "transformationType": "RENAME",
+          "transformationRule": "Rename column to procedure_id",
+          "targetDb": "prod_db_02",
+          "targetTable": "mcs_procedures",
+          "targetColumn": "procedure_id",
+          "targetDataType": "VARCHAR(20)",
+          "sampleBefore": "MCS_PROC_101",
+          "sampleAfter": "MCS-PROC-101",
+          "status": "Mapped"
+        }
+      ]
+    }
+  ],
+  "pipelineSequence": [
+    { "order": 1, "sourceDb": "legacy_db_01", "sourceTable": "LEGACY_MAKES", "targetDb": "prod_db_01", "targetTable": "makes" },
+    { "order": 2, "sourceDb": "legacy_db_01", "sourceTable": "LEGACY_MDLS", "targetDb": "prod_db_01", "targetTable": "models" },
+    { "order": 3, "sourceDb": "legacy_db_01", "sourceTable": "LEGACY_VHCLS", "targetDb": "prod_db_01", "targetTable": "vehicles" },
+    { "order": 4, "sourceDb": "legacy_db_01", "sourceTable": "LEGACY_PCS_PROC", "targetDb": "prod_db_02", "targetTable": "pcs_procedures" },
+    { "order": 5, "sourceDb": "legacy_db_02", "sourceTable": "LEGACY_MCS_PROC", "targetDb": "prod_db_02", "targetTable": "mcs_procedures" }
+  ]
+}

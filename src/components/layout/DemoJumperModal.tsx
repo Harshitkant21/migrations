@@ -52,16 +52,16 @@ export const DemoJumperModal: React.FC = () => {
     badge?: string;
   }[] = [
     { id: 'landing', number: '00', title: 'Landing Page', description: 'Single-screen minimal entry point', icon: Home },
-    { id: 'setup', number: '01', title: 'Migration Setup', description: 'Database connections, intent & constraints', icon: Settings },
-    { id: 'discovery', number: '02', title: 'Source Discovery', description: '245 tables discovered & Impact Analysis', icon: Search },
-    { id: 'definition', number: '03', title: 'Target Definition', description: 'Target schema, tables & DDL workspace', icon: Table },
-    { id: 'mapping', number: '04', title: 'Advanced Mapping', description: '1:1, 1:N, N:1, N:N and JSON import', icon: GitMerge },
-    { id: 'validation', number: '05', title: 'Validation & Readiness', description: '92% readiness score, critical issues & fix', icon: CheckCircle2, badge: 'Blocks Run' },
-    { id: 'execution', number: '06', title: 'Migration Execution', description: '68% progress, control plane & live logs', icon: PlayCircle },
-    { id: 'dashboard', number: '07', title: 'Migration Dashboard (Overview)', description: 'Overall health (94.8%), cascades, alerts', icon: LayoutDashboard, subtab: 'overview' },
+    { id: 'setup', number: '01', title: 'Migration Setup', description: 'PostgreSQL source & target connections', icon: Settings },
+    { id: 'discovery', number: '02', title: 'Source Discovery', description: '245 tables discovered & metadata explorer', icon: Search },
+    { id: 'definition', number: '03', title: 'Target Discovery', description: 'Discovered target PostgreSQL schema & tables', icon: Table },
+    { id: 'mapping', number: '04', title: 'Mapping Workspace', description: 'Source-to-target field mappings & JSON upload', icon: GitMerge },
+    { id: 'validation', number: '05', title: 'Validation Check', description: 'Readiness check ("Is migration ready to run?")', icon: CheckCircle2, badge: 'Readiness Gate' },
+    { id: 'execution', number: '06', title: 'Sequential Execution', description: 'Ordered table pipeline execution & live logs', icon: PlayCircle },
+    { id: 'dashboard', number: '07', title: 'Migration Dashboard (Overview)', description: 'Overall health (94.8%), reconciliation, alerts', icon: LayoutDashboard, subtab: 'overview' },
     { id: 'dashboard', number: '07', title: 'Migration Dashboard (Table Status)', description: '221/245 table migration statuses', icon: LayoutDashboard, subtab: 'status' },
-    { id: 'dashboard', number: '07', title: 'Migration Dashboard (Table Details)', description: 'orders drilldown (240 missing FK diff)', icon: LayoutDashboard, subtab: 'details' },
-    { id: 'report', number: '08', title: 'Final Migration Report', description: 'Audit summary, reconciliation diff & export', icon: FileText }
+    { id: 'dashboard', number: '07', title: 'Migration Dashboard (Table Details)', description: 'orders profile drilldown (discrepancy diff)', icon: LayoutDashboard, subtab: 'details' },
+    { id: 'report', number: '08', title: 'Final Migration Report', description: 'Audit summary & downloadable report artifact', icon: FileText }
   ];
 
   return (

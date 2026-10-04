@@ -113,10 +113,11 @@ export const ReadinessScorecard: React.FC = () => {
               size="md"
               onClick={handleFixIssues}
               loading={fixing}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-sans font-medium text-xs shadow-xs whitespace-nowrap"
+              icon={Wrench}
+              iconPosition="left"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-sans font-bold text-xs shadow-xs flex-row whitespace-nowrap justify-center"
             >
-              <Wrench className="w-3.5 h-3.5 mr-1.5" />
-              <span>Fix Issues (Auto-Remediate)</span>
+              Fix Issues (Auto-Remediate)
             </Button>
           ) : null}
 
@@ -125,15 +126,15 @@ export const ReadinessScorecard: React.FC = () => {
             size="md"
             disabled={!canRunMigration}
             onClick={() => setActiveStep('execution')}
-            className={`w-full font-sans font-medium text-xs shadow-xs whitespace-nowrap ${
+            icon={PlayCircle}
+            iconPosition="left"
+            className={`w-full font-sans text-xs shadow-xs flex-row whitespace-nowrap justify-center ${
               canRunMigration 
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold' 
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed font-medium'
             }`}
           >
-            <PlayCircle className="w-4 h-4 mr-1.5" />
-            <span>Run Migration Now</span>
-            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            Run Migration Now
           </Button>
 
           <Button
@@ -141,9 +142,9 @@ export const ReadinessScorecard: React.FC = () => {
             size="sm"
             onClick={() => setActiveStep('execution')}
             disabled={!canRunMigration}
-            className="w-full font-sans font-medium text-xs text-slate-600 whitespace-nowrap"
+            className="w-full font-sans font-medium text-xs text-slate-600 flex-row whitespace-nowrap justify-center border-slate-300"
           >
-            Continue Anyway (Override Warnings)
+            Continue (Override Warnings)
           </Button>
         </div>
 

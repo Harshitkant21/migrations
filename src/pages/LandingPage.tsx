@@ -9,8 +9,7 @@ import {
   History, 
   Server,
   Database,
-  ShieldCheck,
-  CheckCircle2
+  ShieldCheck
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
@@ -58,10 +57,10 @@ export const LandingPage: React.FC = () => {
           </Badge>
           <button
             onClick={() => setPreviousMigrationsModalOpen(true)}
-            className="text-xs font-mono text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-2.5 py-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+            className="text-xs font-mono text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer font-bold whitespace-nowrap"
           >
-            <History className="w-3.5 h-3.5 text-slate-400" />
-            <span>Runs (3)</span>
+            <History className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span>Previous Runs (3)</span>
           </button>
         </div>
       </header>
@@ -73,7 +72,7 @@ export const LandingPage: React.FC = () => {
           {/* Recent Migration Pill */}
           <div 
             onClick={() => setPreviousMigrationsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-mono text-slate-600 shadow-2xs hover:border-slate-300 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-mono text-slate-600 shadow-2xs hover:border-slate-300 transition-all cursor-pointer whitespace-nowrap"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-slate-500">Last Run:</span>
@@ -88,7 +87,7 @@ export const LandingPage: React.FC = () => {
               Database Migration Platform
             </h1>
             <p className="text-sm sm:text-base text-slate-600 font-sans leading-relaxed max-w-lg mx-auto">
-              Plan, map, execute and validate database migrations from a single workspace.
+              Plan, map, execute and validate multi-database migrations from a single single-source-of-truth JSON configuration.
             </p>
           </div>
 
@@ -98,33 +97,35 @@ export const LandingPage: React.FC = () => {
               variant="primary"
               size="lg"
               onClick={handleStartNew}
-              className="w-full sm:w-auto font-mono text-xs font-bold px-6 py-2.5 shadow-sm bg-slate-900 hover:bg-slate-800 text-white"
+              icon={ArrowRight}
+              iconPosition="right"
+              className="w-full sm:w-auto font-mono text-xs font-bold px-6 py-3 shadow-xs bg-slate-900 hover:bg-slate-800 text-white flex-row whitespace-nowrap"
             >
-              <span>Start New Migration</span>
-              <ArrowRight className="w-4 h-4 ml-1.5" />
+              Start New Migration
             </Button>
 
             <Button
               variant="outline"
               size="lg"
               onClick={() => setPreviousMigrationsModalOpen(true)}
-              className="w-full sm:w-auto font-mono text-xs font-semibold px-5 py-2.5 border-slate-300 hover:bg-white bg-white/80"
+              icon={History}
+              iconPosition="left"
+              className="w-full sm:w-auto font-mono text-xs font-bold px-5 py-3 border-slate-300 hover:bg-white bg-white/90 flex-row whitespace-nowrap"
             >
-              <History className="w-4 h-4 mr-1.5 text-slate-500" />
-              <span>View Previous Migrations</span>
+              View Previous Migrations
             </Button>
           </div>
 
           {/* Technical Specs Strip */}
-          <div className="pt-6 border-t border-slate-200/80 flex items-center justify-center gap-6 text-[11px] font-mono text-slate-500">
+          <div className="pt-6 border-t border-slate-200/80 flex items-center justify-center gap-6 text-[11px] font-mono text-slate-500 whitespace-nowrap flex-wrap">
             <div className="flex items-center gap-1.5">
               <Database className="w-3.5 h-3.5 text-slate-400" />
-              <span>PostgreSQL & MySQL</span>
+              <span>Multi-Source & Multi-Target Databases</span>
             </div>
             <span className="text-slate-300">•</span>
             <div className="flex items-center gap-1.5">
               <Server className="w-3.5 h-3.5 text-slate-400" />
-              <span>Zero-Downtime CDC</span>
+              <span>JSON-Driven Migration Script Engine</span>
             </div>
             <span className="text-slate-300">•</span>
             <div className="flex items-center gap-1.5">
@@ -139,7 +140,7 @@ export const LandingPage: React.FC = () => {
       {/* Minimal Footer */}
       <footer className="px-6 md:px-12 py-3 border-t border-slate-200/60 bg-white/50 text-[11px] text-slate-400 font-mono flex items-center justify-between z-10">
         <span>Enterprise Migration Control Plane • V0 Prototype</span>
-        <span>Ready for Presentation</span>
+        <span>Single Source of Truth JSON Workflow</span>
       </footer>
 
       {/* Previous Runs Modal */}

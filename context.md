@@ -1,110 +1,105 @@
-# Nexus Migrate — Project Context & Architecture Overview
+# Database Migration Platform V0 — Project Context & Architectural Specification
 
 ## 1. Executive Summary & Purpose
 
-**Nexus Migrate** is an enterprise-grade database migration intelligence and operations command center built for **Velocity Motors** (Automotive Manufacturing & Authoring Systems Migration).
+The **Database Migration Platform V0** is an enterprise database migration orchestration platform designed for PostgreSQL migrations.
 
-The platform bridges three distinct migration environments:
-- **Source Database (Legacy Production):** On-premise Oracle / IBM DB2 legacy databases.
-- **Staging Sandbox (STG):** PostgreSQL 16 validation and remediation environment.
-- **Target Production (PROD):** Snowflake Data Cloud target production database.
-
-### The Problem It Solves
-Enterprise database migrations fail due to five fundamental engineering challenges:
-1. **Hidden Referential Cascades:** Modifying or deleting an upstream reference row silently corrupts tens of thousands of downstream child records.
-2. **Opaque Transformation Rules:** Ingested fields undergo string trims or plant-code stripping without clear visual evidence of why LHS != RHS.
-3. **Lack of Dry-Run Validation:** Direct database updates without pre-flight validation cause unexpected foreign key constraint crashes in production.
-4. **Non-Audited Manual Fixes:** Ad-hoc database patches applied in production lack rollback trails or typed validation safety keys.
-5. **Passive Monitoring Dashboards:** Traditional migration dashboards show error counts without explaining root causes, legacy source comparisons, or downstream risks.
-
-Nexus Migrate solves these problems through an interactive **Investigate → Preview → Validate → Promote → Audit** operational lifecycle.
+It provides a structured, predictable 8-step migration workflow:
+1. **Migration Setup:** PostgreSQL Source & Target connection configuration.
+2. **Source Discovery:** Automated discovery of source schemas, tables, data types, primary keys, foreign keys, and indexes.
+3. **Target Schema Discovery:** Automated discovery of existing target PostgreSQL schemas for mapping review (eliminating unsupported manual frontend schema editors).
+4. **Mapping Workspace:** Reviewing discovered schemas, uploading mapping JSON files, downloading sample JSON, and refining mapping rules.
+5. **Validation:** Plain-English readiness checking (`"Is this migration ready to run?"`) with blocking issue detection.
+6. **Sequential Execution:** Ordered table-by-table migration pipeline execution with live logs.
+7. **Migration Dashboard:** Monitoring migration health, status breakdown, and table reconciliation metrics.
+8. **Final Migration Report:** Exporting audit-compliant summary reports.
 
 ---
 
-## 2. Product Vision & UX Philosophy
+## 2. UX & Architectural Philosophy
 
-### Core UX Principle: Progressive Disclosure (Level 1 → Level 5)
-The application adheres to a strict 5-level progressive disclosure hierarchy so a new user can understand the migration state within **30 seconds** of opening the app:
-
-- **Level 1 — Overview (Dashboard):** *"What is happening?"* — Clean 94.8% Migration Health status, 92% progress bar, 4 key metrics, focused Needs Attention list, recent activity timeline, and single `[Review 6 Issues]` callout.
-- **Level 2 — Investigation (Migration Health / Entity Explorer):** *"Where is the problem?"* — Table-level reconciliation stats, search bar, and domain category filters.
-- **Level 3 — Diagnosis (Error Centre / Schema Explorer):** *"Why is this happening?"* — Plain-English error explanation, example value mismatch (`PUNE-X7-2026` vs `X7-2026`), recommended fix, and an expandable `▶ Show Technical Details` accordion hiding raw SQL, datatypes, and stack logs.
-- **Level 4 — Resolution (Remediation Engine / STG Dry-Run):** *"How do I fix it?"* — 4-method value update engine (`DIRECT_OVERRIDE`, `PATTERN_TRANSFORM`, `LEGACY_IMPORT`, `SQL_EXPRESSION`), STG dry-run pre-flight check dialog, and PROD promotion confirmation modal (`BATCH` vs `SINGLE` push).
-- **Level 5 — Validation (Audit History):** *"Did the fix work?"* — Re-validation proof (0 errors remaining) and immutable append-only audit trail.
-
-### Visual Aesthetic
-Modern enterprise visual design inspired by Stripe, Linear, Datadog, and Snowflake:
-- **Theme:** Light, calm, trustworthy aesthetic (`bg-surface`, `border-slate-200`, Slate text, GM Blue accents).
-- **Typography:** Outfit (Display headers) and Inter (UI body).
-- **Animations:** State-explaining transitions only (progress bar updating, validation completing, drawer sliding). No glowing cyberpunk effects or pulsing neon borders.
+### Core UX Principles
+- **Clarity Over Complexity:** Eliminate cluttered dashboards, unnecessary card stacking, and awkward multi-row button arrows.
+- **Direct Discovery:** Discover both source and target schemas automatically from database connections rather than prompting users to manually create or edit target DDL schemas in the browser.
+- **Predictable Execution:** Present migration as an ordered, sequential process (table 1 ➔ table 2 ➔ table 3) rather than complex, parallel worker lanes.
+- **Restrained Enterprise Aesthetic:** Light neutral base (`bg-slate-50`), clear text contrast (`text-slate-900`), blue primary actions (`bg-slate-900` / `bg-brand`), green for success (`bg-emerald-500`), amber for warnings, and red for critical failures.
 
 ---
 
-## 3. Technology Stack & Architecture
+## 3. Technology Stack & Component Structure
 
-- **Frontend Framework:** React 18.3 + TypeScript 5.8 + Vite 8.2
-- **Styling:** Tailwind CSS 3.4 + Vanilla CSS custom variables (`bg-surface`, `bg-brand`, `shadow-premium`)
-- **State Management:** Zustand 5.0 (`useGlobalStore.ts` storing `environment`, `activePage`, `selectedEntityId`, `selectedErrorId`, `selectedVehicleId`)
-- **Diagrams & Graphs:** ReactFlow 12.4 (`@xyflow/react`) for interactive ER schema maps and multi-tier cascade domino graphs
-- **Data Visualization:** Recharts 2.15 for trend curves
+- **Framework:** React 18.3 + TypeScript 5.8 + Vite 8.2
+- **Styling:** Tailwind CSS 3.4 + Vanilla CSS custom variables (`bg-surface`, `bg-brand`, `shadow-2xs`)
+- **State Management:** Zustand 5.0 (`useGlobalStore.ts`)
 - **Icons:** Lucide React 1.16
 
-### Current Architecture: Frontend-First Simulator
-The application currently runs as a frontend-only simulator powered by deterministic seeded mock data (`src/data/database/seedData.ts`) wrapped inside an asynchronous service layer (`src/data/mockApi.ts`).
-
-### Backend-Ready API Service Boundary
-All database operations pass through `mockApi.ts`. To connect a real backend, **zero UI code changes are required** — simply replace `mockApi.ts` promises with HTTP REST/GraphQL calls targeting real backend endpoints:
-- `GET /api/v1/entities` (Schema table metrics)
-- `GET /api/v1/errors` (Data quality anomalies)
-- `POST /api/v1/remediation/preview` (STG pre-flight dry-run)
-- `POST /api/v1/remediation/execute` (PROD promotion commit)
-- `GET /api/v1/source/compare/:errorId` (Legacy database comparator)
-- `GET /api/v1/audits` (Immutable transaction logs)
-
----
-
-## 4. Major Modules & Navigation Structure
-
-Nexus Migrate consists of 9 primary workspace pages:
-1. **Executive Dashboard (`Dashboard.tsx`):** Level 1 Overview dashboard.
-2. **Migration Health (`MigrationHealth.tsx`):** Source vs STG vs PROD record reconciliation table.
-3. **Entity Explorer (`EntityExplorer.tsx`):** Column schema viewer and data quality links.
-4. **Error Centre Workbench (`ErrorCentre.tsx`):** Plain-English error drawer, 4-method value update engine, STG dry-run dialog, and PROD promotion modal.
-5. **Cascade Analysis (`CascadeAnalysis.tsx`):** Multi-tier domino tree graph, $2,063\times$ amplification factor, blast radius inspector, and SVG/PNG image export.
-6. **Schema Explorer (`SchemaExplorer.tsx`):** 11-table ER diagram canvas, table search, domain category filters, 7 table detail tabs (`Overview`, `Schema`, `Data`, `Relationships`, `Mapping`, `Validation`, `History`), High-Res SVG Diagram Export, and SQL DDL Script Generator.
-7. **Author Changes (`AuthorChanges.tsx`):** Field-level author revision timeline (Original → Migrated → Current) with approval workflows.
-8. **Page Drilldown Directory (`PageDrilldown.tsx`):** Central sitemap directory matrix.
-9. **Audit History (`AuditHistory.tsx`):** Immutable operational audit logs capturing operator actions and before/after diff snapshots.
-
----
-
-## 5. Seed Data & Velocity Motors Domain Story
-
-The seed dataset models **Velocity Motors**, a global automotive manufacturer migrating legacy production systems:
-- **Pune Manufacturing Facility (India):** Houses legacy engine assembly databases (`LEGACY_VHCLS`, `LEGACY_MDLS`).
-- **Munich R&D Facility (Germany):** Houses European engineering control catalogs (`LEGACY_PCS_HDR`, `LEGACY_PCS_PROC`).
-- **Vehicle Authoring Models:** `GMV-2967` (Next-Gen EV Platform), `GMV-1713` (Hybrid V8 Module), `GMV-1750` (Obsolete Concept Row).
-- **Seeded Data Quality Anomalies:**
-  - `ERR-2967` (Missing Parent Reference): Vehicle code `GMV-2967` missing in reference catalog; blocks 150,610 terminal procedure rows ($2,063\times$ cascade multiplier). `FIXABLE`.
-  - `ERR-1713` (Duplicate Regional Keys): Ingested duplicate regional keys in staging. `FIXABLE`.
-  - `ERR-1750` (Orphan Reference Row): Excluded make code `"GEN"` with 0 child dependents. `DELETE_CANDIDATE`.
-  - `ERR-3091` (Unsafe Deletion Block): 521,878 MCS procedure drafts referencing parent node. `BLOCKED`.
-
----
-
-## 6. Key Architectural Decisions Made
-
-1. **AI Copilot Removed (`not required`):** Removed Copilot drawer and state to focus on deterministic database governance and automated pre-flight checks.
-2. **High-Fidelity Diagram Exports:** Integrated vector SVG and PNG image exports in Schema Explorer and Cascade view, alongside SQL `CREATE TABLE` / `ALTER TABLE` DDL generation.
-3. **Multi-Tier Domino Effect Tree:** Upgraded cascade visualization to map 4 distinct tiers ($\text{Root Anomaly} \rightarrow \text{Headers} \rightarrow \text{Systems} \rightarrow \text{Subsystems} \rightarrow \text{Leaf Procedures}$).
-4. **4-Method Remediation Engine:** Implemented `DIRECT_OVERRIDE`, `PATTERN_TRANSFORM`, `LEGACY_IMPORT`, and `SQL_EXPRESSION` update selectors.
-5. **5-Level Progressive Disclosure:** Simplified Dashboard and Error Drawer to present plain-English explanations first before expanding technical details.
+### Project Structure
+```
+c:\Users\hp\Desktop\dummy_migration_dashboard\
+├── docs/
+│   └── BACKEND_REQUIREMENTS.md       # API design contract & backend specifications
+├── public/
+│   └── samples/
+│       ├── sample-mapping.json       # Sample mapping JSON artifact
+│       └── sample-migration-report.json # Sample migration report download artifact
+├── src/
+│   ├── components/
+│   │   ├── layout/                   # TopBar, SidebarNav, AppShell, DemoJumperModal
+│   │   └── ui/                       # Button, Badge, Modal, ToastContainer
+│   ├── data/
+│   │   ├── database/                 # Seed data & database metadata definitions
+│   │   ├── journeyMockData.ts        # Mock data for 8-step migration journey
+│   │   └── mockApi.ts                # Async service layer boundary for backend integration
+│   ├── pages/
+│   │   ├── journey/                  # 8-Step Journey Components
+│   │   │   ├── 1_MigrationSetup.tsx
+│   │   │   ├── 2_SourceDiscovery.tsx
+│   │   │   ├── 3_TargetDiscovery.tsx
+│   │   │   ├── 4_MappingWorkspace.tsx
+│   │   │   ├── 5_ValidationStep.tsx
+│   │   │   ├── 6_ExecutionStep.tsx
+│   │   │   ├── 7_DashboardStep.tsx
+│   │   │   └── 8_MigrationReport.tsx
+│   │   ├── LandingPage.tsx           # Initial Landing Screen
+│   │   ├── Overview.tsx              # Executive Overview Tab
+│   │   ├── MigrationStatus.tsx       # Migration Status Directory Tab
+│   │   ├── Mapping.tsx               # Mapping Studio Tab
+│   │   └── TableDetails.tsx          # Table Details Profile Tab
+│   ├── state/
+│   │   └── useGlobalStore.ts         # Global Zustand state store
+│   └── types/
+│       └── models.ts                 # TypeScript data contracts & models
+├── context.md                        # Product context (This file)
+├── functionality.md                  # Comprehensive functional handbook
+└── package.json                      # Project manifest
+```
 
 ---
 
-## 7. Future Roadmap & Production Readiness
+## 4. State Architecture & Service Boundary
 
-- **Real Database Integration:** Replace `mockApi.ts` with real PostgreSQL / Snowflake backend REST API clients.
-- **Live Progress Streaming:** Add WebSocket connection to stream real-time execution logs and rows/sec throughput during production commits.
-- **Automated Table Checksum Hashing:** Implement background row-hash comparison between Source, STG, and PROD.
-- **Dynamic ER Layout Engine:** Integrate Dagre/ELK auto-layout algorithms for arbitrary multi-schema visualization.
+All data interactions are routed through `src/data/mockApi.ts` and managed in Zustand (`useGlobalStore.ts`).
+
+### Backend Integration Boundary
+To connect a real backend REST/GraphQL server:
+1. Replace simulated promises in `src/data/mockApi.ts` with HTTP API calls (`axios` or `fetch`).
+2. Map response payloads to the backend API contracts defined in [`docs/BACKEND_REQUIREMENTS.md`](file:///c:/Users/hp/Desktop/dummy_migration_dashboard/docs/BACKEND_REQUIREMENTS.md).
+3. Zero UI component restructuring is required.
+
+---
+
+## 5. Important Decisions & Revised Scope
+
+1. **Target Schema Creation Removed:** Creating new target tables or adding target columns through the frontend has been removed. Target schemas are discovered automatically from the target connection.
+2. **PostgreSQL Focus:** Database engine selection is focused on PostgreSQL connections for V0.
+3. **Sequential Execution Model:** Migration execution is displayed as a single, ordered table pipeline (`Completed` ➔ `Running` ➔ `Queued` ➔ `Failed`) rather than parallel worker lanes.
+4. **JSON Mapping Upload & Sample Download:** Mapping Workspace provides clear JSON upload and sample JSON download actions (`sample-mapping.json`).
+5. **Downloadable Migration Report:** Final Migration Report page provides a working download button for `sample-migration-report.json`.
+
+---
+
+## 6. Known Limitations & Future Extensions
+
+- **Current Limitation:** Connection test, discovery, validation, and execution run on simulated frontend timers.
+- **Future Extension:** Implement WebSocket/SSE streaming for real-time migration logs and row ingestion throughput.
+- **Future Extension:** Add HashiCorp Vault / encrypted secrets store integration for database passwords.
