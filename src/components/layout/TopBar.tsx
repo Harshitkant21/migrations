@@ -6,7 +6,8 @@ import {
   Check, 
   ArrowLeft,
   Server,
-  Sparkles
+  Sparkles,
+  Menu
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -15,7 +16,11 @@ export const TopBar: React.FC = () => {
   const { 
     setIsLandingPage, 
     setDemoModeQuickJumpOpen,
-    migrationIntent
+    migrationIntent,
+    projectName,
+    projectDescription,
+    sidebarCollapsed,
+    setSidebarCollapsed
   } = useGlobalStore();
 
   // Listen for Ctrl+Shift+D or Cmd+Shift+D to trigger demo quick-jump
@@ -31,10 +36,18 @@ export const TopBar: React.FC = () => {
   }, [setDemoModeQuickJumpOpen]);
 
   return (
-    <header className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-5 select-none shadow-2xs font-sans w-full max-w-full overflow-hidden">
+    <header className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-5 select-none shadow-2xs font-sans w-full max-w-full overflow-hidden shrink-0">
       
       {/* Left: Branding & Migration Context */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="p-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors md:hidden cursor-pointer"
+          title={sidebarCollapsed ? "Open navigation menu" : "Close navigation menu"}
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
         <button
           onClick={() => setIsLandingPage(true)}
           className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-md hover:bg-slate-100 cursor-pointer text-xs font-medium whitespace-nowrap"
@@ -51,11 +64,11 @@ export const TopBar: React.FC = () => {
             MP
           </div>
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs sm:text-sm font-semibold text-slate-900 tracking-tight whitespace-nowrap truncate">
-              Migration Orchestrator
-            </span>
-            <span className="hidden lg:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-600 bg-slate-100 border border-slate-200 whitespace-nowrap">
-              #MIG-2026-0928
+            <span 
+              className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight whitespace-nowrap truncate max-w-[150px] sm:max-w-[280px] lg:max-w-[400px]"
+              title={`${projectName} — ${projectDescription}`}
+            >
+              {projectName}
             </span>
             <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/70 whitespace-nowrap">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />

@@ -21,7 +21,13 @@ import {
 } from 'lucide-react';
 
 export const MigrationReportStep: React.FC = () => {
-  const { setActiveStep, addToast } = useGlobalStore();
+  const { 
+    setActiveStep, 
+    addToast,
+    projectName,
+    projectId,
+    projectDescription
+  } = useGlobalStore();
 
   const handleDownloadReport = () => {
     const link = document.createElement('a');
@@ -38,7 +44,7 @@ export const MigrationReportStep: React.FC = () => {
   };
 
   const handleShareReport = () => {
-    addToast('Report access link copied to clipboard: https://platform.internal/reports/MIG-2026-0928-PROD', 'success');
+    addToast(`Report access link copied to clipboard: https://platform.internal/reports/${projectId}`, 'success');
   };
 
   return (
@@ -113,13 +119,16 @@ export const MigrationReportStep: React.FC = () => {
               <span>OFFICIAL RUN MANIFEST</span>
             </div>
             <h2 className="text-2xl font-black font-mono text-slate-900 tracking-tight">
-              Production Database Migration
+              {projectName}
             </h2>
-            <div className="flex items-center gap-2 mt-2 font-mono">
-              <Badge variant="neutral" size="sm">ID: MIG-2026-0928-PROD</Badge>
+            <div className="flex items-center gap-2 mt-2 font-mono flex-wrap">
+              <Badge variant="neutral" size="sm">ID: {projectId}</Badge>
               <Badge variant="success" size="sm" dot>Environment: Production</Badge>
               <Badge variant="warning" size="sm">Completed with Warnings</Badge>
             </div>
+            <p className="text-xs text-slate-500 font-sans mt-2 max-w-xl">
+              {projectDescription}
+            </p>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-right font-mono text-xs space-y-1">

@@ -52,6 +52,15 @@ interface GlobalState {
   previousMigrationsModalOpen: boolean;
   setPreviousMigrationsModalOpen: (open: boolean) => void;
 
+  // Project Info State
+  projectId: string;
+  projectName: string;
+  projectDescription: string;
+  startProjectModalOpen: boolean;
+  setStartProjectModalOpen: (open: boolean) => void;
+  setProjectDetails: (details: { projectId?: string; projectName: string; projectDescription: string }) => void;
+  startNewProject: (name: string, desc: string, customId?: string) => void;
+
   // Demo mode quick-jump
   demoModeQuickJumpOpen: boolean;
   setDemoModeQuickJumpOpen: (open: boolean) => void;
@@ -198,6 +207,35 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
 
   previousMigrationsModalOpen: false,
   setPreviousMigrationsModalOpen: (open) => set({ previousMigrationsModalOpen: open }),
+
+  // Project Info Defaults
+  projectId: 'PRJ-2026-0928-PROD',
+  projectName: 'Enterprise Core Database Modernization',
+  projectDescription: 'Full schema, relation, and data migration from legacy PostgreSQL nodes to distributed Aurora PostgreSQL cluster.',
+  startProjectModalOpen: false,
+  setStartProjectModalOpen: (open) => set({ startProjectModalOpen: open }),
+  setProjectDetails: ({ projectId, projectName, projectDescription }) => {
+    set((state) => ({
+      projectId: projectId || state.projectId,
+      projectName,
+      projectDescription,
+      isDraftSaved: true
+    }));
+    get().addToast(`Project updated: ${projectName}`, 'success');
+  },
+  startNewProject: (name, desc, customId) => {
+    const id = customId?.trim() || `PRJ-MIG-${Math.floor(1000 + Math.random() * 9000)}`;
+    set({
+      projectId: id,
+      projectName: name,
+      projectDescription: desc,
+      activeStep: 'setup',
+      isLandingPage: false,
+      startProjectModalOpen: false,
+      isDraftSaved: true
+    });
+    get().addToast(`Initialized project "${name}" (${id})`, 'success');
+  },
 
   demoModeQuickJumpOpen: false,
   setDemoModeQuickJumpOpen: (open) => set({ demoModeQuickJumpOpen: open }),

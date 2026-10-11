@@ -11,13 +11,31 @@ import {
   Search, 
   Layers,
   ShieldCheck,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 
 export const TargetDefinitionStep: React.FC = () => {
-  const { setActiveStep, targetTablesList } = useGlobalStore();
+  const { setActiveStep, targetTablesList, addToast } = useGlobalStore();
   const [selectedTableId, setSelectedTableId] = useState<string>(targetTablesList[0]?.id || 'tgt-customer-profile');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryStage, setDiscoveryStage] = useState<string>('COMPLETED');
+
+  const runDiscoveryOperation = async () => {
+    setIsDiscovering(true);
+    setDiscoveryStage('Connecting to destination cluster pg-cloud-aurora.internal:5432...');
+    await new Promise(r => setTimeout(r, 600));
+    setDiscoveryStage('Inspecting target databases prod_db_01 & prod_db_02 schema structures...');
+    await new Promise(r => setTimeout(r, 600));
+    setDiscoveryStage('Cataloging 221 target tables and 1,620 column definitions...');
+    await new Promise(r => setTimeout(r, 600));
+    setDiscoveryStage('Verifying table constraints, nullable flags, primary and foreign keys...');
+    await new Promise(r => setTimeout(r, 600));
+    setDiscoveryStage('COMPLETED');
+    setIsDiscovering(false);
+    addToast('Successfully fetched target database schema: 221 target tables cataloged', 'success');
+  };
 
   const activeTable = targetTablesList.find(t => t.id === selectedTableId) || targetTablesList[0];
 
@@ -69,29 +87,48 @@ export const TargetDefinitionStep: React.FC = () => {
         </div>
       </div>
 
-      {/* Target Discovery Summary Banner */}
-      <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs">
+      {/* Target Discovery Summary & Operational State Banner */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-mono text-xs">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-            <Database className="w-4 h-4 text-emerald-700" />
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+            isDiscovering ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+          }`}>
+            {isDiscovering ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-amber-700" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+            )}
           </div>
           <div>
-            <div className="font-bold text-emerald-950 flex items-center gap-2">
-              <span>Target Schema Discovered: pg-cloud-aurora.internal:5432</span>
+            <div className="font-bold text-slate-900 flex items-center gap-2">
+              <span>{isDiscovering ? 'Target Discovery Operation in Progress' : 'Target Schema Discovery Completed'}</span>
               <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold border border-emerald-200">
                 PostgreSQL Target Ready
               </span>
             </div>
-            <div className="text-[11px] text-emerald-800 font-sans mt-0.5">
-              Discovered 221 target tables across target production databases (<strong className="font-mono">prod_db_01</strong> & <strong className="font-mono">prod_db_02</strong>).
+            <div className="text-[11px] text-slate-500 font-sans mt-0.5">
+              {isDiscovering 
+                ? discoveryStage 
+                : 'Target catalog verified from pg-cloud-aurora.internal:5432 across prod_db_01 and prod_db_02.'}
             </div>
           </div>
         </div>
 
-        <div className="text-right shrink-0">
-          <span className="text-xs font-bold text-emerald-900 bg-white px-3 py-1 rounded-md border border-emerald-200 shadow-2xs inline-block">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <span className="text-xs font-bold text-emerald-900 bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-200 shadow-2xs inline-block">
             221 Target Tables Cataloged
           </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runDiscoveryOperation}
+            loading={isDiscovering}
+            className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100 whitespace-nowrap"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isDiscovering ? 'animate-spin' : ''}`} />
+            <span>{isDiscovering ? 'Discovering...' : 'Re-Run Target Discovery'}</span>
+          </Button>
         </div>
       </div>
 
@@ -169,7 +206,7 @@ export const TargetDefinitionStep: React.FC = () => {
           </div>
 
           {/* Column Schema Table */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden">
+          <div className="border border-slate-200 rounded-xl overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
               <thead className="bg-slate-50 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                 <tr>

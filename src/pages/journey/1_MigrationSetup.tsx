@@ -19,7 +19,8 @@ import {
   Globe,
   Key,
   ShieldCheck,
-  Edit2
+  Edit2,
+  FolderKanban
 } from 'lucide-react';
 
 interface ExtendedDatabaseInfo {
@@ -39,7 +40,10 @@ interface ExtendedDatabaseInfo {
 export const MigrationSetupStep: React.FC = () => {
   const { 
     setActiveStep,
-    addToast
+    addToast,
+    projectName,
+    projectId,
+    projectDescription
   } = useGlobalStore();
 
   const [sourceDbs, setSourceDbs] = useState<ExtendedDatabaseInfo[]>([
@@ -228,6 +232,28 @@ export const MigrationSetupStep: React.FC = () => {
           >
             Proceed to Source Discovery
           </Button>
+        </div>
+      </div>
+
+      {/* Project Identity Ribbon */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
+            <FolderKanban className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-900 text-sm">{projectName}</span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5 max-w-2xl font-sans">
+              {projectDescription}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-bold">
+            ● Active Project Scope
+          </span>
         </div>
       </div>
 

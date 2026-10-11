@@ -2,6 +2,7 @@
 import React from 'react';
 import { useGlobalStore } from '../state/useGlobalStore';
 import { PreviousMigrationsModal } from './PreviousMigrationsModal';
+import { StartProjectModal } from '../components/project/StartProjectModal';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { 
@@ -9,19 +10,20 @@ import {
   History, 
   Server,
   Database,
-  ShieldCheck
+  ShieldCheck,
+  FolderKanban
 } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {
   const { 
-    setIsLandingPage, 
-    setActiveStep,
-    setPreviousMigrationsModalOpen 
+    setPreviousMigrationsModalOpen,
+    setStartProjectModalOpen,
+    projectName,
+    projectId
   } = useGlobalStore();
 
   const handleStartNew = () => {
-    setActiveStep('setup');
-    setIsLandingPage(false);
+    setStartProjectModalOpen(true);
   };
 
   return (
@@ -36,31 +38,31 @@ export const LandingPage: React.FC = () => {
       />
 
       {/* Top Header */}
-      <header className="px-6 md:px-12 py-5 flex items-center justify-between border-b border-slate-200/70 bg-white/70 backdrop-blur-xs z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-xs tracking-wider">
+      <header className="px-4 sm:px-6 md:px-12 py-4 sm:py-5 flex items-center justify-between border-b border-slate-200/70 bg-white/70 backdrop-blur-xs z-10 gap-2">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 rounded-md bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-xs tracking-wider shrink-0">
             MP
           </div>
-          <div className="flex flex-col">
-            <span className="font-mono font-bold text-xs tracking-tight text-slate-900">
+          <div className="flex flex-col min-w-0">
+            <span className="font-mono font-bold text-xs tracking-tight text-slate-900 truncate">
               MIGRATION PLATFORM
             </span>
-            <span className="font-mono text-[10px] text-slate-400">
+            <span className="font-mono text-[10px] text-slate-400 truncate hidden xs:inline">
               Enterprise Orchestration Console
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Badge variant="neutral" size="sm" dot>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Badge variant="neutral" size="sm" dot className="hidden sm:inline-flex">
             Engine v2.4 Online
           </Badge>
           <button
             onClick={() => setPreviousMigrationsModalOpen(true)}
-            className="text-xs font-mono text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer font-bold whitespace-nowrap"
+            className="text-xs font-mono text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer font-bold whitespace-nowrap"
           >
             <History className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-            <span>Previous Runs (3)</span>
+            <span>Runs (3)</span>
           </button>
         </div>
       </header>
@@ -75,10 +77,10 @@ export const LandingPage: React.FC = () => {
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-mono text-slate-600 shadow-2xs hover:border-slate-300 transition-all cursor-pointer whitespace-nowrap"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-500">Last Run:</span>
-            <span className="font-bold text-slate-800">MIG-2026-0928-PROD</span>
+            <span className="text-slate-500">Ready:</span>
+            <span className="font-bold text-slate-800">Production Engine v2.4</span>
             <span className="text-slate-300">·</span>
-            <span className="text-emerald-700 font-bold">94.8% Health</span>
+            <span className="text-emerald-700 font-bold">PostgreSQL Verified</span>
           </div>
 
           {/* Value Prop */}
@@ -138,13 +140,14 @@ export const LandingPage: React.FC = () => {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="px-6 md:px-12 py-3 border-t border-slate-200/60 bg-white/50 text-[11px] text-slate-400 font-mono flex items-center justify-between z-10">
+      <footer className="px-4 sm:px-6 md:px-12 py-3 border-t border-slate-200/60 bg-white/50 text-[11px] text-slate-400 font-mono flex flex-col sm:flex-row items-center justify-between gap-1 text-center sm:text-left z-10">
         <span>Enterprise Migration Control Plane • V0 Prototype</span>
         <span>Single Source of Truth JSON Workflow</span>
       </footer>
 
-      {/* Previous Runs Modal */}
+      {/* Modals */}
       <PreviousMigrationsModal />
+      <StartProjectModal />
     </div>
   );
 };
